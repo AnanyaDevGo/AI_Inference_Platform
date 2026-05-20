@@ -54,7 +54,7 @@ def get_otp_from_logs(email):
 
 def test_forgot_password():
     print("\n--- Testing Forgot Password Flow (JWT Token) ---")
-    email = "forgot_test@example.com"
+    email = f"forgot_test_{int(time.time())}@example.com"
     password = "password123"
     new_password = "newpassword456"
 
@@ -78,11 +78,17 @@ def test_forgot_password():
     print("Retrieved reset token from response:", reset_token)
     assert reset_token is not None, "Failed to retrieve reset token from response"
 
+    # Get OTP code
+    otp_code = get_otp_from_logs(email)
+    print("Retrieved reset OTP code:", otp_code)
+    assert otp_code is not None, "Failed to retrieve reset OTP code"
+
     # Reset password
     print("Resetting password...")
     r = requests.post(f"{API_URL}/auth/reset-password", json={
         "email": email,
         "reset_token": reset_token,
+        "code": otp_code,
         "new_password": new_password
     }, verify=False)
     print("Reset response:", r.status_code, r.text)

@@ -4,7 +4,7 @@ import uuid
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -124,6 +124,25 @@ async def delete_org(
     org = result.scalar_one_or_none()
     if not org:
         raise NotFoundError("Org not found")
-    
+
+    # 1. Delete all usage logs for this organization
+    from app.models.usage_log import UsageLog
+    await db.execute(
+        delete(UsageLog).where(UsageLog.org_id == org.id)
+    )
+
+    # 2. Delete all API keys for this organization
+    from app.models.api_key import ApiKey
+    await db.execute(
+        delete(ApiKey).where(ApiKey.org_id == org.id)
+    )
+
+    # 3. Delete all users belonging to this organization (this cascades to conversations/messages)
+    from app.models.user import User
+    await db.execute(
+        delete(User).where(User.org_id == org.id)
+    )
+
+    # 4. Delete the organization
     await db.delete(org)
     await db.flush()

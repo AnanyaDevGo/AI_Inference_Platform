@@ -4,6 +4,7 @@ import { useAuthStore } from '../stores/authStore'
 import { useChatStore } from '../stores/chatStore'
 import { apiStreamPost, apiPatch, apiDelete } from '../api/client'
 import Sidebar from '../components/Sidebar'
+import { useThemeStore } from '../stores/themeStore'
 
 const MODEL = 'gemma2:2b-instruct-q4_K_M'
 
@@ -87,6 +88,7 @@ function MessageText({ content }: { content: string }) {
 }
 
 export default function ChatPage() {
+  const { theme, toggleTheme } = useThemeStore()
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -318,11 +320,33 @@ export default function ChatPage() {
             </button>
             <div className="logo">
               <div className="logo-icon">⚡</div>
-              <span className="logo-text">AI Inference Platform</span>
+              <span className="logo-text">InferVoyage</span>
             </div>
             <span className="model-badge">{MODEL.split(':')[0]}</span>
           </div>
           <div className="header-right">
+            <button
+              onClick={toggleTheme}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-primary)',
+                fontSize: '18px',
+                cursor: 'pointer',
+                padding: '8px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background var(--transition)',
+                marginRight: '12px'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--border)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'none' }}
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
             <div className="user-info">
               <div className="user-avatar">{initials}</div>
               <span className="user-name">{userName}</span>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
+import { useThemeStore } from '../stores/themeStore'
 import { apiPost, apiGet } from '../api/client'
 
 interface AuthResponse {
@@ -16,6 +17,7 @@ declare global {
 }
 
 export default function RegisterPage() {
+  const { theme, toggleTheme } = useThemeStore()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -236,9 +238,48 @@ export default function RegisterPage() {
 
   return (
     <div className="auth-wrapper">
+      <div 
+        style={{
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
+          zIndex: 10
+        }}
+      >
+        <button
+          onClick={toggleTheme}
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+            color: 'var(--text-primary)',
+            fontSize: '18px',
+            cursor: 'pointer',
+            padding: '10px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all var(--transition)',
+            boxShadow: 'var(--shadow-sm)',
+            width: '42px',
+            height: '42px'
+          }}
+          onMouseEnter={(e) => { 
+            e.currentTarget.style.background = 'var(--bg-input)';
+            e.currentTarget.style.borderColor = 'var(--border-hover)';
+          }}
+          onMouseLeave={(e) => { 
+            e.currentTarget.style.background = 'var(--bg-card)';
+            e.currentTarget.style.borderColor = 'var(--border)';
+          }}
+          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        >
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
+      </div>
       <div className="auth-card">
         <h1>Create Account</h1>
-        <p className="subtitle">Get started with AI Inference Platform</p>
+        <p className="subtitle">Get started with InferVoyage</p>
 
         {error && <div className="error-msg">{error}</div>}
 

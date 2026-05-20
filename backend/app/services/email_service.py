@@ -177,12 +177,12 @@ async def send_otp_verification_email(email: str, code: str) -> None:
     """Send the 6-digit verification code using the dynamically registered provider."""
     provider = get_email_provider()
     
-    subject = "Verify your AI Inference Platform Account"
+    subject = "Verify your InferVoyage Account"
     body_text = f"Your 6-digit verification code is: {code}\n\nThis code expires in 5 minutes."
     
     body_html = f"""
     <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-        <h2 style="color: #4f46e5; text-align: center;">AI Inference Platform</h2>
+        <h2 style="color: #4f46e5; text-align: center;">InferVoyage</h2>
         <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
         <p>Hello,</p>
         <p>Thank you for signing up. Please enter the following 6-digit verification code to complete your registration:</p>

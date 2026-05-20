@@ -5,7 +5,7 @@ import structlog
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -148,5 +148,31 @@ async def delete_user(
     if not target:
         raise NotFoundError("User not found")
 
+    # 1. Nullify user_id references in usage_logs
+    from app.models.usage_log import UsageLog
+    await db.execute(
+        update(UsageLog)
+        .where(UsageLog.user_id == target.id)
+        .values(user_id=None)
+    )
+
+    # 2. Nullify api_key_id references in usage_logs for keys created by this user
+    from app.models.api_key import ApiKey
+    user_keys_stmt = select(ApiKey.id).where(ApiKey.created_by_user_id == target.id)
+    user_keys_res = await db.execute(user_keys_stmt)
+    user_key_ids = user_keys_res.scalars().all()
+    if user_key_ids:
+        await db.execute(
+            update(UsageLog)
+            .where(UsageLog.api_key_id.in_(user_key_ids))
+            .values(api_key_id=None)
+        )
+
+    # 3. Delete api_keys created by this user
+    await db.execute(
+        delete(ApiKey).where(ApiKey.created_by_user_id == target.id)
+    )
+
+    # 4. Delete the user (this cascades to conversations and chat_messages)
     await db.delete(target)
     await db.flush()

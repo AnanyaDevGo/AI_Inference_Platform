@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
+import { useThemeStore } from '../stores/themeStore'
 import { apiPost, apiGet } from '../api/client'
 
 interface AuthResponse {
@@ -16,6 +17,7 @@ declare global {
 }
 
 export default function LoginPage() {
+  const { theme, toggleTheme } = useThemeStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -138,24 +140,24 @@ export default function LoginPage() {
     e.preventDefault()
     setForgotError('')
 
+    if (!forgotOtp || forgotOtp.length !== 6) return setForgotError('Please enter the 6-digit code')
+    if (!newPassword || newPassword.length < 8) return setForgotError('Password must be at least 8 characters')
+
     const payload: Record<string, any> = {
       email: forgotEmail,
-      new_password: newPassword
+      new_password: newPassword,
+      code: forgotOtp
     }
 
     if (resetToken) {
       payload.reset_token = resetToken
-    } else {
-      if (!forgotOtp || forgotOtp.length !== 6) return setForgotError('Please enter the 6-digit code')
-      payload.code = forgotOtp
     }
-
-    if (!newPassword || newPassword.length < 8) return setForgotError('Password must be at least 8 characters')
 
     setForgotLoading(true)
     try {
       await apiPost('/auth/reset-password', payload)
       setForgotSuccess('Password reset successfully! You can now log in.')
+      setEmail(forgotEmail)
       setTimeout(() => {
         setShowForgotPassword(false)
         setForgotStep(1)
@@ -164,7 +166,7 @@ export default function LoginPage() {
         setForgotOtp('')
         setNewPassword('')
         setResetToken(null)
-      }, 3000)
+      }, 1500)
     } catch (err: any) {
       setForgotError(err.message || 'Password reset failed')
     } finally {
@@ -215,6 +217,45 @@ export default function LoginPage() {
 
   return (
     <div className="auth-wrapper">
+      <div 
+        style={{
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
+          zIndex: 10
+        }}
+      >
+        <button
+          onClick={toggleTheme}
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+            color: 'var(--text-primary)',
+            fontSize: '18px',
+            cursor: 'pointer',
+            padding: '10px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all var(--transition)',
+            boxShadow: 'var(--shadow-sm)',
+            width: '42px',
+            height: '42px'
+          }}
+          onMouseEnter={(e) => { 
+            e.currentTarget.style.background = 'var(--bg-input)';
+            e.currentTarget.style.borderColor = 'var(--border-hover)';
+          }}
+          onMouseLeave={(e) => { 
+            e.currentTarget.style.background = 'var(--bg-card)';
+            e.currentTarget.style.borderColor = 'var(--border)';
+          }}
+          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        >
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
+      </div>
       <div className="auth-card">
         <h1>Welcome Back</h1>
         <p className="subtitle">Sign in to continue chatting</p>
@@ -403,21 +444,19 @@ export default function LoginPage() {
               </form>
             ) : (
               <form onSubmit={handleResetPasswordSubmit}>
-                {!resetToken && (
-                  <div className="form-group">
-                    <label htmlFor="forgotOtpInput">6-Digit Code</label>
-                    <input
-                      id="forgotOtpInput"
-                      type="text"
-                      maxLength={6}
-                      value={forgotOtp}
-                      onChange={(e) => setForgotOtp(e.target.value)}
-                      placeholder="123456"
-                      required
-                      autoFocus
-                    />
-                  </div>
-                )}
+                <div className="form-group">
+                  <label htmlFor="forgotOtpInput">6-Digit Code</label>
+                  <input
+                    id="forgotOtpInput"
+                    type="text"
+                    maxLength={6}
+                    value={forgotOtp}
+                    onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, ''))}
+                    placeholder="123456"
+                    required
+                    autoFocus
+                  />
+                </div>
                 <div className="form-group" style={{ marginTop: '16px' }}>
                   <label htmlFor="newPasswordInput">New Password</label>
                   <input

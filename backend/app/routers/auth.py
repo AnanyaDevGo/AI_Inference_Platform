@@ -544,7 +544,7 @@ async def forgot_password(
     user = await get_user_by_email(db, req.email)
     
     # Check if we should trigger actual reset flow
-    should_send = user is not None and user.is_verified and (user.password_set or user.password_hash is not None)
+    should_send = user is not None and user.is_verified
 
     if should_send:
         code = await store_password_reset_otp(req.email)
@@ -553,11 +553,11 @@ async def forgot_password(
         from app.services.email_service import get_email_provider
         provider = get_email_provider()
         
-        subject = "Reset your AI Inference Platform Password"
+        subject = "Reset your InferVoyage Password"
         body_text = f"Your 6-digit password reset verification code is: {code}\n\nThis code expires in 5 minutes."
         body_html = f"""
         <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-            <h2 style="color: #4f46e5; text-align: center;">AI Inference Platform</h2>
+            <h2 style="color: #4f46e5; text-align: center;">InferVoyage</h2>
             <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
             <p>Hello,</p>
             <p>We received a request to reset your password. Please enter the following 6-digit verification code to proceed:</p>
@@ -595,35 +595,36 @@ async def reset_password(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Reset password with verified OTP or reset token.
+    Reset password with verified OTP and reset token.
     """
-    verified = False
-    if req.reset_token:
-        from app.services.auth_service import decode_token
-        try:
-            payload = decode_token(req.reset_token)
-            if payload.get("purpose") != "password_reset":
-                raise ValidationError("Invalid reset token purpose")
-            if payload.get("email") != req.email:
-                raise ValidationError("Reset token email mismatch")
-            verified = True
-        except Exception as e:
-            raise ValidationError(f"Invalid or expired reset token: {str(e)}")
-    else:
+    if not req.reset_token:
+        raise ValidationError("Reset token is required.")
+
+    from app.services.auth_service import decode_token
+    try:
+        payload = decode_token(req.reset_token)
+        if payload.get("purpose") != "password_reset":
+            raise ValidationError("Invalid reset token purpose")
+        if payload.get("email") != req.email:
+            raise ValidationError("Reset token email mismatch")
+    except Exception as e:
+        raise ValidationError(f"Invalid or expired reset token: {str(e)}")
+
+    user = await get_user_by_email(db, req.email)
+    should_verify = user is not None and user.is_verified
+
+    if should_verify:
         if not req.code:
-            raise ValidationError("Verification code or reset token is required.")
+            raise ValidationError("Verification code is required.")
         try:
             verified = await verify_password_reset_otp(req.email, req.code)
         except ValueError as e:
             raise ValidationError(str(e))
-
-    if not verified:
-        raise ValidationError("Invalid or expired verification code.")
-
-    user = await get_user_by_email(db, req.email)
-    if not user:
+        if not verified:
+            raise ValidationError("Invalid or expired verification code.")
+    else:
         # Silently succeed to prevent user enumeration
-        logger.info("password_reset_ignored_user_not_found", email=req.email)
+        logger.info("password_reset_ignored_user_not_found_or_google_only", email=req.email)
         return {"success": True, "message": "Password reset successfully!"}
 
     user.password_hash = hash_password(req.new_password)

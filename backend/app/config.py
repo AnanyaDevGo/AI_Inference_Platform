@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     )
 
     # ── Application ────────────────────────────────────────────────
-    APP_NAME: str = "AI Inference Platform"
+    APP_NAME: str = "InferVoyage"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
 

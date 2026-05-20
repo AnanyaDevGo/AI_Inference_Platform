@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
+import { useThemeStore } from '../stores/themeStore'
 import { apiGet, apiPost, apiPatch, apiDelete } from '../api/client'
 
 interface Org { id: string; name: string; slug: string; rate_limit_rpm: number; rate_limit_burst: number; is_active: boolean }
@@ -18,6 +19,7 @@ const ROLE_NAMES: Record<string, string> = {
 type Tab = 'orgs' | 'users' | 'keys' | 'usage'
 
 export default function AdminPage() {
+  const { theme, toggleTheme } = useThemeStore()
   const role = useAuthStore(s => s.role)
   const isPlatformAdmin = role === 'platform_admin'
   const [tab, setTab] = useState<Tab>(isPlatformAdmin ? 'orgs' : 'users')
@@ -40,6 +42,28 @@ export default function AdminPage() {
           <span className="role-badge">{ROLE_NAMES[role || 'viewer']}</span>
         </div>
         <div className="header-right">
+          <button
+            onClick={toggleTheme}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-primary)',
+              fontSize: '18px',
+              cursor: 'pointer',
+              padding: '8px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background var(--transition)',
+              marginRight: '12px'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--border)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'none' }}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
           <div className="user-info">
             <div className="user-avatar">{initials}</div>
             <span className="user-name">{userName}</span>
@@ -112,10 +136,13 @@ function OrgsTab({ token }: { token: string | null }) {
 
   const deleteOrg = async (id: string) => {
     if (!window.confirm("Are you sure you want to delete this organization? This is irreversible.")) return
+    setError('')
     try {
       await apiDelete(`/admin/orgs/${id}`, token)
       load()
-    } catch { /* */ }
+    } catch (e: any) {
+      setError(e.message || 'Failed to delete organization')
+    }
   }
 
   return (
@@ -126,6 +153,8 @@ function OrgsTab({ token }: { token: string | null }) {
           {showCreate ? 'Cancel' : '+ New Org'}
         </button>
       </div>
+
+      {error && <div className="error-msg" style={{ marginBottom: '16px' }}>{error}</div>}
 
       {showCreate && (
         <div className="create-form">
@@ -234,10 +263,13 @@ function UsersTab({ token, isPlatformAdmin }: { token: string | null; isPlatform
 
   const deleteUser = async (userId: string) => {
     if (!window.confirm("Are you sure you want to delete this user? This is irreversible.")) return
+    setError('')
     try {
       await apiDelete(`/admin/users/${userId}`, token)
       load()
-    } catch { /* */ }
+    } catch (e: any) {
+      setError(e.message || 'Failed to delete user')
+    }
   }
 
   return (
@@ -248,6 +280,8 @@ function UsersTab({ token, isPlatformAdmin }: { token: string | null; isPlatform
           {showCreate ? 'Cancel' : '+ Invite User'}
         </button>
       </div>
+
+      {error && <div className="error-msg" style={{ marginBottom: '16px' }}>{error}</div>}
 
       {showCreate && (
         <div className="create-form">

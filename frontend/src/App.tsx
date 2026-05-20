@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './stores/authStore'
+import { useThemeStore } from './stores/themeStore'
 import RegisterPage from './pages/Register'
 import LoginPage from './pages/Login'
 import ChatPage from './pages/Chat'
@@ -20,6 +21,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  useThemeStore() // Initialize the active theme dynamically
   return (
     <BrowserRouter>
       <Routes>
