@@ -5,7 +5,7 @@ import json
 import time
 import uuid
 from collections.abc import AsyncGenerator
-from typing import Any
+from typing import Any, Callable, Coroutine
 
 import httpx
 import structlog
@@ -185,6 +185,7 @@ async def complete(
 async def stream_complete(
     req: ChatCompletionRequest,
     org_id: str = "anonymous",
+    on_complete: Callable[[int, int], Coroutine[Any, Any, None]] | None = None,
 ) -> AsyncGenerator[str, None]:
     """
     Proxy a streaming chat completion to Ollama.
@@ -296,6 +297,11 @@ async def stream_complete(
             duration_ms=int((time.perf_counter() - start) * 1000),
             ttft_ms=ttft_ms,
         )
+        if on_complete:
+            try:
+                await on_complete(prompt_tokens, completion_tokens)
+            except Exception:
+                logger.exception("inference_stream_callback_failed")
 
     except (GeneratorExit, asyncio.CancelledError):
         # Client disconnected mid-stream
@@ -306,6 +312,11 @@ async def stream_complete(
             duration_ms=int((time.perf_counter() - start) * 1000),
         )
         _record_metrics(org_id, req.model, "cancelled", 0, 0, start)
+        if on_complete:
+            try:
+                await on_complete(0, 0)
+            except Exception:
+                pass
         return
 
     except (InferenceTimeoutError, InferenceUnavailableError):

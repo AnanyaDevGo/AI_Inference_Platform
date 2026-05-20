@@ -61,8 +61,23 @@ async def chat_completions(
         raise RateLimitError(retry_after=retry_after)
 
     if request.stream:
+        request_id = response.headers.get("X-Request-ID", str(uuid.uuid4()))
+        async def on_complete_callback(prompt_tokens: int, completion_tokens: int) -> None:
+            await log_usage(
+                db,
+                org_id=org_id,
+                user_id=current_user.user_id,
+                api_key_id=current_user.api_key_id,
+                model_name=request.model,
+                request_id=request_id,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                duration_ms=0,
+                status="success" if (prompt_tokens > 0 or completion_tokens > 0) else "cancelled",
+            )
+
         return StreamingResponse(
-            inference_service.stream_complete(request, org_id=org_id),
+            inference_service.stream_complete(request, org_id=org_id, on_complete=on_complete_callback),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",

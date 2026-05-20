@@ -8,6 +8,35 @@ import { useThemeStore } from '../stores/themeStore'
 
 const MODEL = 'gemma2:2b-instruct-q4_K_M'
 
+function parseTextFormatting(text: string) {
+  if (!text) return text
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>
+    }
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return (
+        <code 
+          key={index} 
+          style={{ 
+            background: 'var(--bg-input)', 
+            padding: '2px 6px', 
+            borderRadius: '4px', 
+            fontFamily: 'monospace',
+            border: '1px solid var(--border)',
+            fontSize: '0.9em',
+            color: 'var(--accent)'
+          }}
+        >
+          {part.slice(1, -1)}
+        </code>
+      )
+    }
+    return part
+  })
+}
+
 function MessageText({ content }: { content: string }) {
   if (!content) return <span>&nbsp;</span>
 
@@ -23,7 +52,7 @@ function MessageText({ content }: { content: string }) {
             <span key={index}>
               {lines.map((line, lineIdx) => (
                 <span key={lineIdx}>
-                  {line}
+                  {parseTextFormatting(line)}
                   {lineIdx < lines.length - 1 && <br />}
                 </span>
               ))}
@@ -100,6 +129,7 @@ export default function ChatPage() {
   // Message edit/retry states
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editContent, setEditContent] = useState('')
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
 
   const token = useAuthStore((s) => s.token)
   const userName = useAuthStore((s) => s.userName)
@@ -422,28 +452,57 @@ export default function ChatPage() {
                       ✏️ Edit
                     </button>
                   )}
-                  {!streaming && msg.role === 'assistant' && msg.id && (
-                    <button
-                      type="button"
-                      onClick={() => handleRetry(i, msg.id || '')}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: 'var(--text-muted)',
-                        cursor: 'pointer',
-                        fontSize: '0.75rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        transition: 'color var(--transition)'
-                      }}
-                      className="btn-retry-message"
-                      title="Retry response"
-                    >
-                      ↻ Retry
-                    </button>
+                  {!streaming && msg.role === 'assistant' && (
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(msg.content)
+                          setCopiedIndex(i)
+                          setTimeout(() => setCopiedIndex(null), 2000)
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-muted)',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          transition: 'color var(--transition)'
+                        }}
+                        className="btn-copy-message"
+                        title="Copy response"
+                      >
+                        {copiedIndex === i ? '✅ Copied' : '📋 Copy'}
+                      </button>
+                      {msg.id && (
+                        <button
+                          type="button"
+                          onClick={() => handleRetry(i, msg.id || '')}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--text-muted)',
+                            cursor: 'pointer',
+                            fontSize: '0.75rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            transition: 'color var(--transition)'
+                          }}
+                          className="btn-retry-message"
+                          title="Retry response"
+                        >
+                          ↻ Retry
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
                 
