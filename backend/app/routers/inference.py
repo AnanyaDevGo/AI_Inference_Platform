@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Response
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_db, get_session_factory
 from app.dependencies.auth import CurrentUser, get_current_user_or_api_key
 from app.models.org import Org
 from app.schemas.inference import ChatCompletionRequest, ChatCompletionResponse
@@ -62,19 +62,33 @@ async def chat_completions(
 
     if request.stream:
         request_id = response.headers.get("X-Request-ID", str(uuid.uuid4()))
+        # Capture values needed after the stream (session is closed by then)
+        _org_id = org_id
+        _user_id = current_user.user_id
+        _api_key_id = current_user.api_key_id
+        _model = request.model
+        _request_id = request_id
+
         async def on_complete_callback(prompt_tokens: int, completion_tokens: int) -> None:
-            await log_usage(
-                db,
-                org_id=org_id,
-                user_id=current_user.user_id,
-                api_key_id=current_user.api_key_id,
-                model_name=request.model,
-                request_id=request_id,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                duration_ms=0,
-                status="success" if (prompt_tokens > 0 or completion_tokens > 0) else "cancelled",
-            )
+            """Open a fresh session — the request-scoped session is closed by stream end."""
+            factory = get_session_factory()
+            async with factory() as fresh_db:
+                try:
+                    await log_usage(
+                        fresh_db,
+                        org_id=_org_id,
+                        user_id=_user_id,
+                        api_key_id=_api_key_id,
+                        model_name=_model,
+                        request_id=_request_id,
+                        prompt_tokens=prompt_tokens,
+                        completion_tokens=completion_tokens,
+                        duration_ms=0,
+                        status="success" if (prompt_tokens > 0 or completion_tokens > 0) else "cancelled",
+                    )
+                    await fresh_db.commit()
+                except Exception:
+                    logger.exception("stream_usage_log_failed", model=_model, org_id=_org_id)
 
         return StreamingResponse(
             inference_service.stream_complete(request, org_id=org_id, on_complete=on_complete_callback),

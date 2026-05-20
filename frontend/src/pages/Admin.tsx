@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { useThemeStore } from '../stores/themeStore'
@@ -34,9 +34,9 @@ export default function AdminPage() {
     <div className="admin-layout">
       <header className="admin-header">
         <div className="header-left">
-          <button className="btn-back" onClick={() => navigate('/chat')} title="Back to Chat">← Chat</button>
+          <button className="btn-back" onClick={() => navigate('/chat')} title="Back to Chat">â† Chat</button>
           <div className="logo">
-            <div className="logo-icon">⚙</div>
+            <div className="logo-icon">âš™</div>
             <span className="logo-text">Admin Panel</span>
           </div>
           <span className="role-badge">{ROLE_NAMES[role || 'viewer']}</span>
@@ -62,7 +62,7 @@ export default function AdminPage() {
             onMouseLeave={(e) => { e.currentTarget.style.background = 'none' }}
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
-            {theme === 'dark' ? '☀️' : '🌙'}
+            {theme === 'dark' ? 'â˜€ï¸' : 'ðŸŒ™'}
           </button>
           <div className="user-info">
             <div className="user-avatar">{initials}</div>
@@ -99,7 +99,7 @@ export default function AdminPage() {
   )
 }
 
-// ── Orgs Tab ────────────────────────────────────────────────────────────────
+// â”€â”€ Orgs Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function OrgsTab({ token }: { token: string | null }) {
   const [orgs, setOrgs] = useState<Org[]>([])
@@ -201,7 +201,7 @@ function OrgsTab({ token }: { token: string | null }) {
   )
 }
 
-// ── Users Tab ───────────────────────────────────────────────────────────────
+// â”€â”€ Users Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function UsersTab({ token, isPlatformAdmin }: { token: string | null; isPlatformAdmin: boolean }) {
   const [users, setUsers] = useState<UserItem[]>([])
@@ -348,7 +348,7 @@ function UsersTab({ token, isPlatformAdmin }: { token: string | null; isPlatform
   )
 }
 
-// ── API Keys Tab ────────────────────────────────────────────────────────────
+// â”€â”€ API Keys Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function KeysTab({ token }: { token: string | null }) {
   const [keys, setKeys] = useState<ApiKeyItem[]>([])
@@ -412,7 +412,7 @@ function KeysTab({ token }: { token: string | null }) {
 
       {createdKey && (
         <div className="key-created-banner">
-          <strong>⚠ Save this key — it won't be shown again!</strong>
+          <strong>âš  Save this key â€” it won't be shown again!</strong>
           <code className="key-display">{createdKey}</code>
           <button className="btn-sm" onClick={() => { navigator.clipboard.writeText(createdKey); }}>Copy</button>
         </div>
@@ -448,7 +448,7 @@ function KeysTab({ token }: { token: string | null }) {
   )
 }
 
-// ── Usage Tab ───────────────────────────────────────────────────────────────
+// â”€â”€ Usage Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface DailyUsageItem {
   date: string
@@ -461,20 +461,44 @@ function UsageTab({ token }: { token: string | null }) {
   const [daily, setDaily] = useState<DailyUsageItem[]>([])
   const [chartMetric, setChartMetric] = useState<'requests' | 'tokens'>('requests')
   const [hoveredPoint, setHoveredPoint] = useState<any | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     if (!token) return
+    setLoading(true)
+    setError(null)
     try {
-      const sumData = await apiGet<UsageSummary>('/admin/usage/summary', token)
+      const [sumData, dailyData] = await Promise.all([
+        apiGet<UsageSummary>('/admin/usage/summary', token),
+        apiGet<DailyUsageItem[]>('/admin/usage/daily', token),
+      ])
       setSummary(sumData)
-      const dailyData = await apiGet<DailyUsageItem[]>('/admin/usage/daily', token)
       setDaily(dailyData)
-    } catch { /* */ }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load usage data')
+    } finally {
+      setLoading(false)
+    }
   }, [token])
 
   useEffect(() => { load() }, [load])
 
-  if (!summary) return <div className="admin-section">Loading...</div>
+  if (loading) return (
+    <div className="admin-section" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px', gap: '12px', color: 'var(--text-muted)' }}>
+      <span style={{ fontSize: '1.5rem', animation: 'spin 1s linear infinite' }}>âŸ³</span>
+      Loading usage dataâ€¦
+    </div>
+  )
+
+  if (error) return (
+    <div className="admin-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '300px', gap: '16px' }}>
+      <div style={{ color: 'var(--error)', fontSize: '2rem' }}>âš ï¸</div>
+      <div style={{ color: 'var(--error)', fontWeight: '600' }}>Failed to load usage data</div>
+      <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{error}</div>
+      <button className="btn-primary-sm" onClick={load}>Retry</button>
+    </div>
+  )
 
   // SVG Chart Dimensions
   const width = 600
@@ -502,24 +526,25 @@ function UsageTab({ token }: { token: string | null }) {
     <div className="admin-section" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div className="section-header">
         <h2>Usage Summary</h2>
+        <button className="btn-primary-sm" onClick={load} title="Refresh data" style={{ minWidth: '90px' }}>â†» Refresh</button>
       </div>
 
       <div className="usage-stats-grid">
         <div className="stat-card">
           <div className="stat-label">Total Requests</div>
-          <div className="stat-value">{summary.total_requests.toLocaleString()}</div>
+          <div className="stat-value">{summary!.total_requests.toLocaleString()}</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">Total Tokens</div>
-          <div className="stat-value">{summary.total_tokens.toLocaleString()}</div>
+          <div className="stat-value">{summary!.total_tokens.toLocaleString()}</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">Prompt Tokens</div>
-          <div className="stat-value">{summary.prompt_tokens.toLocaleString()}</div>
+          <div className="stat-value">{summary!.prompt_tokens.toLocaleString()}</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">Completion Tokens</div>
-          <div className="stat-value">{summary.completion_tokens.toLocaleString()}</div>
+          <div className="stat-value">{summary!.completion_tokens.toLocaleString()}</div>
         </div>
       </div>
 
@@ -567,129 +592,94 @@ function UsageTab({ token }: { token: string | null }) {
         </div>
 
         <div style={{ position: 'relative', width: '100%' }}>
-          <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: 'auto', display: 'block', overflow: 'visible' }}>
-            {/* Grid lines */}
-            {[0, 0.25, 0.5, 0.75, 1].map((ratio, index) => {
-              const y = padding + ratio * (height - padding * 2)
-              const val = Math.round(maxVal - ratio * maxVal)
-              return (
-                <g key={index}>
-                  <line
-                    x1={padding}
-                    y1={y}
-                    x2={width - padding}
-                    y2={y}
-                    stroke="var(--border)"
-                    strokeWidth="1"
-                    strokeDasharray="4 4"
-                  />
-                  <text
-                    x={padding - 10}
-                    y={y + 4}
-                    fill="var(--text-muted)"
-                    fontSize="10"
-                    textAnchor="end"
-                  >
-                    {val.toLocaleString()}
-                  </text>
-                </g>
-              )
-            })}
-
-            {/* Filled Area */}
-            {areaD && (
-              <path
-                d={areaD}
-                fill="url(#chartGradient)"
-                opacity="0.15"
-              />
-            )}
-
-            {/* Line path */}
-            {pathD && (
-              <path
-                d={pathD}
-                fill="none"
-                stroke="var(--accent)"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            )}
-
-            {/* Definitions for gradient */}
-            <defs>
-              <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--accent)" />
-                <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-
-            {/* Dots */}
-            {points.map((p, index) => (
-              <circle
-                key={index}
-                cx={p.x}
-                cy={p.y}
-                r={hoveredPoint?.date === p.date ? 6 : 4}
-                fill={hoveredPoint?.date === p.date ? 'var(--accent)' : 'var(--bg-card)'}
-                stroke="var(--accent)"
-                strokeWidth="2"
-                style={{ cursor: 'pointer', transition: 'all 0.1s' }}
-                onMouseEnter={() => setHoveredPoint(p)}
-                onMouseLeave={() => setHoveredPoint(null)}
-              />
-            ))}
-
-            {/* X-axis labels (just first, middle, and last date for clean look) */}
-            {points.length > 0 && (
-              <>
-                <text x={points[0].x} y={height - padding + 18} fill="var(--text-muted)" fontSize="10" textAnchor="middle">
-                  {new Date(points[0].date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                </text>
-                <text x={points[Math.floor(points.length / 2)].x} y={height - padding + 18} fill="var(--text-muted)" fontSize="10" textAnchor="middle">
-                  {new Date(points[Math.floor(points.length / 2)].date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                </text>
-                <text x={points[points.length - 1].x} y={height - padding + 18} fill="var(--text-muted)" fontSize="10" textAnchor="middle">
-                  {new Date(points[points.length - 1].date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                </text>
-              </>
-            )}
-          </svg>
-
-          {/* Interactive Tooltip */}
-          {hoveredPoint && (
-            <div
-              style={{
-                position: 'absolute',
-                left: `${(hoveredPoint.x / width) * 100}%`,
-                top: `${(hoveredPoint.y / height) * 100 - 15}%`,
-                transform: 'translate(-50%, -100%)',
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--border)',
-                borderRadius: 'var(--radius-sm)',
-                padding: '8px 12px',
-                boxShadow: 'var(--shadow-md)',
-                fontSize: '0.8rem',
-                color: 'var(--text-primary)',
-                pointerEvents: 'none',
-                zIndex: 10,
-                whiteSpace: 'nowrap',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '2px'
-              }}
-            >
-              <span style={{ fontWeight: '600' }}>
-                {new Date(hoveredPoint.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-              </span>
-              <span style={{ color: 'var(--accent)', fontWeight: '700' }}>
-                {hoveredPoint[chartMetric].toLocaleString()} {chartMetric}
-              </span>
+          {daily.every(d => d[chartMetric] === 0) ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '200px', gap: '10px', color: 'var(--text-muted)' }}>
+              <div style={{ fontSize: '2.5rem' }}>ðŸ“Š</div>
+              <div style={{ fontWeight: '600', fontSize: '0.95rem', color: 'var(--text-secondary)' }}>No usage data yet</div>
+              <div style={{ fontSize: '0.8rem' }}>Send some chat messages to see data appear here</div>
             </div>
+          ) : (
+            <>
+              <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: 'auto', display: 'block', overflow: 'visible' }}>
+                {[0, 0.25, 0.5, 0.75, 1].map((ratio, index) => {
+                  const y = padding + ratio * (height - padding * 2)
+                  const val = Math.round(maxVal - ratio * maxVal)
+                  return (
+                    <g key={index}>
+                      <line x1={padding} y1={y} x2={width - padding} y2={y} stroke="var(--border)" strokeWidth="1" strokeDasharray="4 4" />
+                      <text x={padding - 10} y={y + 4} fill="var(--text-muted)" fontSize="10" textAnchor="end">{val.toLocaleString()}</text>
+                    </g>
+                  )
+                })}
+                {areaD && <path d={areaD} fill="url(#chartGradient)" opacity="0.15" />}
+                {pathD && <path d={pathD} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
+                <defs>
+                  <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--accent)" />
+                    <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                {points.map((p, index) => (
+                  <circle
+                    key={index}
+                    cx={p.x}
+                    cy={p.y}
+                    r={hoveredPoint?.date === p.date ? 6 : 4}
+                    fill={hoveredPoint?.date === p.date ? 'var(--accent)' : 'var(--bg-card)'}
+                    stroke="var(--accent)"
+                    strokeWidth="2"
+                    style={{ cursor: 'pointer', transition: 'all 0.1s' }}
+                    onMouseEnter={() => setHoveredPoint(p)}
+                    onMouseLeave={() => setHoveredPoint(null)}
+                  />
+                ))}
+                {points.length > 0 && (
+                  <>
+                    <text x={points[0].x} y={height - padding + 18} fill="var(--text-muted)" fontSize="10" textAnchor="middle">
+                      {new Date(points[0].date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </text>
+                    <text x={points[Math.floor(points.length / 2)].x} y={height - padding + 18} fill="var(--text-muted)" fontSize="10" textAnchor="middle">
+                      {new Date(points[Math.floor(points.length / 2)].date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </text>
+                    <text x={points[points.length - 1].x} y={height - padding + 18} fill="var(--text-muted)" fontSize="10" textAnchor="middle">
+                      {new Date(points[points.length - 1].date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </text>
+                  </>
+                )}
+              </svg>
+              {hoveredPoint && (
+                <div style={{
+                  position: 'absolute',
+                  left: `${(hoveredPoint.x / width) * 100}%`,
+                  top: `${(hoveredPoint.y / height) * 100 - 15}%`,
+                  transform: 'translate(-50%, -100%)',
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '8px 12px',
+                  boxShadow: 'var(--shadow-md)',
+                  fontSize: '0.8rem',
+                  color: 'var(--text-primary)',
+                  pointerEvents: 'none',
+                  zIndex: 10,
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px'
+                }}>
+                  <span style={{ fontWeight: '600' }}>
+                    {new Date(hoveredPoint.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                  </span>
+                  <span style={{ color: 'var(--accent)', fontWeight: '700' }}>
+                    {hoveredPoint[chartMetric].toLocaleString()} {chartMetric}
+                  </span>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
     </div>
   )
 }
+
