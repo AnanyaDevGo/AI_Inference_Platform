@@ -60,3 +60,8 @@ class ResetPasswordRequest(BaseModel):
     reset_token: str | None = None
     new_password: str = Field(..., min_length=8, max_length=128)
 
+
+class SetupPasswordRequest(BaseModel):
+    password: str = Field(..., min_length=8, max_length=128)
+
+

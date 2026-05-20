@@ -19,6 +19,7 @@ from app.schemas.auth import (
     VerifyOtpRequest,
     ForgotPasswordRequest,
     ResetPasswordRequest,
+    SetupPasswordRequest,
 )
 from app.services.auth_service import (
     authenticate_user,
@@ -179,6 +180,9 @@ async def register(
         role=role,
         auth_provider="local",
         is_active=True,
+        is_verified=True,
+        password_set=True,
+        last_login_at=datetime.now(timezone.utc),
     )
     db.add(user)
     await db.flush()
@@ -208,6 +212,14 @@ async def login(
 ) -> TokenResponse:
     user = await authenticate_user(db, req.email, req.password)
     
+    # Check verification status
+    if not user.is_verified:
+        raise ValidationError("This account is not verified. Please verify using Google sign-in.")
+
+    # Update last login time
+    user.last_login_at = datetime.now(timezone.utc)
+    await db.flush()
+
     # Issue Tokens
     access_token = create_access_token(user)
     refresh_token, jti = create_refresh_token(user)
@@ -234,7 +246,7 @@ async def google_auth(
 ) -> TokenResponse:
     """
     Authenticate/Sign Up a user via Google OAuth ID token.
-    If the account is new, stores temporary data in Redis and triggers OTP verification.
+    Immediately creates a user record in the DB if not existing, marked as unverified.
     """
     idinfo = await verify_google_id_token(req.id_token)
     email = idinfo["email"]
@@ -244,11 +256,36 @@ async def google_auth(
 
     user = await get_user_by_email(db, email)
     if user:
-        # Existing user -> Link Google ID if missing, or login directly
+        if not user.is_verified:
+            # User exists in DB but is not verified. Resend OTP.
+            code = await store_otp(email=email, name=user.name)
+            
+            from app.services.auth_service import create_verification_token
+            token_payload = {
+                "email": email,
+                "name": user.name,
+                "google_id": google_id,
+                "purpose": "google_registration"
+            }
+            verification_token = create_verification_token(token_payload)
+            await send_otp_verification_email(email, code)
+            
+            logger.info("google_user_exists_unverified_otp_resent", email=email)
+            return TokenResponse(
+                access_token="",
+                user_name=user.name,
+                user_email=user.email,
+                requires_otp=True,
+                verification_token=verification_token,
+            )
+
+        # Existing verified user -> Link Google ID if missing, or login directly
         if not user.google_id:
             user.google_id = google_id
             user.auth_provider = "google"
-            await db.flush()
+        
+        user.last_login_at = datetime.now(timezone.utc)
+        await db.flush()
 
         access_token = create_access_token(user)
         refresh_token, jti = create_refresh_token(user)
@@ -263,31 +300,47 @@ async def google_auth(
             requires_otp=False,
         )
 
-    # First-time Registration -> Create OTP in Redis (expires in 5 minutes)
-    code = await store_otp(
-        email=email,
+    # First-time Registration -> Create Org & DB user immediately as unverified
+    is_new = False
+    if req.org_name:
+        org, is_new = await get_or_create_custom_org(db, req.org_name)
+    else:
+        org = await get_or_create_default_org(db)
+
+    total = await count_users(db)
+    role = "platform_admin" if total == 0 else ("org_admin" if is_new else "viewer")
+
+    user = User(
+        org_id=org.id,
         name=name,
-        org_name=req.org_name,
+        email=email,
+        password_hash=None,
         google_id=google_id,
         profile_picture=picture,
+        auth_provider="google",
+        role=role,
+        is_active=True,
+        is_verified=False,
+        password_set=False,
     )
+    db.add(user)
+    await db.flush()
+    await db.refresh(user)
 
-    # Generate JWT verification token
+    code = await store_otp(email=email, name=name)
+
     from app.services.auth_service import create_verification_token
     token_payload = {
         "email": email,
         "name": name,
-        "org_name": req.org_name,
         "google_id": google_id,
-        "profile_picture": picture,
+        "purpose": "google_registration"
     }
     verification_token = create_verification_token(token_payload)
 
-    # Send verification mail asynchronously
     await send_otp_verification_email(email, code)
-    logger.info("google_register_otp_dispatched", email=email)
+    logger.info("google_register_db_record_created_otp_dispatched", email=email)
 
-    # Return requiring OTP response with verification token
     return TokenResponse(
         access_token="",
         user_name=name,
@@ -298,30 +351,21 @@ async def google_auth(
 
 
 @router.post("/send-otp")
-async def send_otp(req: SendOtpRequest):
+async def send_otp(
+    req: SendOtpRequest,
+    db: AsyncSession = Depends(get_db),
+):
     """
     Resends the 6-digit OTP verification code to the email.
     """
-    email_key = req.email.strip().lower()
-    r = await get_redis_client()
-    key = f"otp:{email_key}"
-    
-    data_str = await r.get(key)
-    if not data_str:
-        raise ValidationError("No pending registration found for this email. Please initiate Google sign-in first.")
+    user = await get_user_by_email(db, req.email)
+    if not user:
+        raise ValidationError("No pending registration found for this email.")
         
-    import json
-    payload = json.loads(data_str)
-    
-    # Generate new OTP and store
-    code = await store_otp(
-        email=req.email,
-        name=payload.get("name"),
-        org_name=payload.get("org_name"),
-        google_id=payload.get("google_id"),
-        profile_picture=payload.get("profile_picture"),
-    )
-    
+    if user.is_verified:
+        raise ValidationError("This account is already verified.")
+
+    code = await store_otp(email=req.email, name=user.name)
     await send_otp_verification_email(req.email, code)
     logger.info("otp_resend_triggered", email=req.email)
     return {"success": True, "message": "Verification code resent successfully."}
@@ -334,8 +378,12 @@ async def verify_otp_endpoint(
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     """
-    Verifies 6-digit OTP, completes database registration, and returns tokens.
+    Verifies 6-digit OTP, marks user verified in DB, and returns tokens.
     """
+    user = await get_user_by_email(db, req.email)
+    if not user:
+        raise ValidationError("User not found.")
+
     payload = None
     if req.verification_token:
         from app.services.auth_service import decode_token
@@ -358,37 +406,10 @@ async def verify_otp_endpoint(
         if not payload:
             raise ValidationError("Invalid or expired verification code.")
 
-    # Re-verify that they didn't complete sign-up in the meantime
-    existing = await get_user_by_email(db, req.email)
-    if existing:
-        raise ValidationError("An account with this email already exists")
-
-    # Org provision
-    is_new = False
-    org_name = payload.get("org_name")
-    if org_name:
-        org, is_new = await get_or_create_custom_org(db, org_name)
-    else:
-        org = await get_or_create_default_org(db)
-
-    total = await count_users(db)
-    role = "platform_admin" if total == 0 else ("org_admin" if is_new else "viewer")
-
-    # Create active user linked to Google
-    user = User(
-        org_id=org.id,
-        name=payload["name"],
-        email=req.email,
-        password_hash=None,
-        google_id=payload["google_id"],
-        profile_picture=payload.get("profile_picture"),
-        auth_provider="google",
-        role=role,
-        is_active=True,
-    )
-    db.add(user)
+    # Mark user as verified
+    user.is_verified = True
+    user.last_login_at = datetime.now(timezone.utc)
     await db.flush()
-    await db.refresh(user)
 
     # Issue Tokens
     access_token = create_access_token(user)
@@ -396,7 +417,7 @@ async def verify_otp_endpoint(
     await store_active_refresh_token(str(user.id), jti, 604800)
     set_refresh_cookie(response, refresh_token)
 
-    logger.info("google_otp_user_verified_and_registered", email=user.email, role=role, org=org.slug)
+    logger.info("google_otp_user_verified", email=user.email)
 
     return TokenResponse(
         access_token=access_token,
@@ -518,51 +539,52 @@ async def forgot_password(
 ):
     """
     Request a password reset OTP.
+    Secured against user enumeration attacks.
     """
     user = await get_user_by_email(db, req.email)
-    if not user:
-        raise ValidationError("No account found with this email.")
-
-    if user.google_id or user.auth_provider == "google" or not user.password_hash:
-        raise ValidationError("This account is linked to Google. Please sign in with Google.")
-
-    code = await store_password_reset_otp(req.email)
     
-    # Send the code using pluggable provider registry
-    from app.services.email_service import get_email_provider
-    provider = get_email_provider()
-    
-    subject = "Reset your AI Inference Platform Password"
-    body_text = f"Your 6-digit password reset verification code is: {code}\n\nThis code expires in 5 minutes."
-    body_html = f"""
-    <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-        <h2 style="color: #4f46e5; text-align: center;">AI Inference Platform</h2>
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-        <p>Hello,</p>
-        <p>We received a request to reset your password. Please enter the following 6-digit verification code to proceed:</p>
-        <div style="text-align: center; margin: 30px 0;">
-            <span style="font-size: 2.2rem; font-weight: 700; letter-spacing: 8px; background-color: #f3f4f6; padding: 12px 24px; border-radius: 6px; color: #1f2937; border: 1px solid #e5e7eb;">
-                {code}
-            </span>
+    # Check if we should trigger actual reset flow
+    should_send = user is not None and user.is_verified and (user.password_set or user.password_hash is not None)
+
+    if should_send:
+        code = await store_password_reset_otp(req.email)
+        
+        # Send the code using pluggable provider registry
+        from app.services.email_service import get_email_provider
+        provider = get_email_provider()
+        
+        subject = "Reset your AI Inference Platform Password"
+        body_text = f"Your 6-digit password reset verification code is: {code}\n\nThis code expires in 5 minutes."
+        body_html = f"""
+        <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <h2 style="color: #4f46e5; text-align: center;">AI Inference Platform</h2>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+            <p>Hello,</p>
+            <p>We received a request to reset your password. Please enter the following 6-digit verification code to proceed:</p>
+            <div style="text-align: center; margin: 30px 0;">
+                <span style="font-size: 2.2rem; font-weight: 700; letter-spacing: 8px; background-color: #f3f4f6; padding: 12px 24px; border-radius: 6px; color: #1f2937; border: 1px solid #e5e7eb;">
+                    {code}
+                </span>
+            </div>
+            <p style="color: #6b7280; font-size: 0.875rem;">This code is valid for <strong>5 minutes</strong>. If you did not request a password reset, you can safely ignore this email.</p>
         </div>
-        <p style="color: #6b7280; font-size: 0.875rem;">This code is valid for <strong>5 minutes</strong>. If you did not request a password reset, you can safely ignore this email.</p>
-    </div>
-    """
-    
-    await provider.send_email(
-        to_email=req.email,
-        subject=subject,
-        body_text=body_text,
-        body_html=body_html,
-    )
-    
+        """
+        
+        await provider.send_email(
+            to_email=req.email,
+            subject=subject,
+            body_text=body_text,
+            body_html=body_html,
+        )
+        logger.info("forgot_password_otp_dispatched", email=req.email)
+
+    # Always generate a valid-looking reset token to prevent enumeration response delta
     from app.services.auth_service import create_reset_token
     reset_token = create_reset_token(req.email)
 
-    logger.info("forgot_password_otp_dispatched", email=req.email)
     return {
         "success": True,
-        "message": "Verification code sent to your email.",
+        "message": "If an account exists for this email, a reset link has been sent.",
         "reset_token": reset_token,
     }
 
@@ -573,7 +595,7 @@ async def reset_password(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Reset password with verified OTP.
+    Reset password with verified OTP or reset token.
     """
     verified = False
     if req.reset_token:
@@ -600,11 +622,37 @@ async def reset_password(
 
     user = await get_user_by_email(db, req.email)
     if not user:
-        raise ValidationError("User not found.")
+        # Silently succeed to prevent user enumeration
+        logger.info("password_reset_ignored_user_not_found", email=req.email)
+        return {"success": True, "message": "Password reset successfully!"}
 
     user.password_hash = hash_password(req.new_password)
+    user.password_set = True
     await db.flush()
 
     logger.info("password_reset_successful", email=req.email)
     return {"success": True, "message": "Password reset successfully!"}
+
+
+@router.post("/setup-password")
+async def setup_password(
+    req: SetupPasswordRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Setup password for Google-created users who want to set a password later.
+    """
+    result = await db.execute(select(User).where(User.id == uuid.UUID(current_user.user_id)))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise ValidationError("User not found.")
+
+    user.password_hash = hash_password(req.password)
+    user.password_set = True
+    await db.flush()
+
+    logger.info("user_password_setup_completed", email=user.email)
+    return {"success": True, "message": "Password setup completed successfully."}
+
 
