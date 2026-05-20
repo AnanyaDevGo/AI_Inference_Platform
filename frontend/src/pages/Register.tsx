@@ -36,6 +36,11 @@ export default function RegisterPage() {
   const [otpCode, setOtpCode] = useState('')
   const [verificationToken, setVerificationToken] = useState<string | null>(null)
 
+  // Password Setup States for OAuth users
+  const [showPasswordSetup, setShowPasswordSetup] = useState(false)
+  const [setupPasswordVal, setSetupPasswordVal] = useState('')
+  const [tempAccessToken, setTempAccessToken] = useState<string | null>(null)
+
   const setAuth = useAuthStore((s) => s.setAuth)
   const navigate = useNavigate()
 
@@ -182,15 +187,41 @@ export default function RegisterPage() {
     setGoogleLoading(true)
     try {
       const data = await apiPost<AuthResponse>('/auth/verify-otp', payload)
+      setTempAccessToken(data.access_token)
       setAuth(data.access_token, data.user_name, data.user_email)
-      setShowGooglePrompt(false)
       setVerificationToken(null)
-      navigate('/chat')
+      setShowPasswordSetup(true)
     } catch (err: any) {
       setGoogleError(err.message || 'Invalid or expired verification payload')
     } finally {
       setGoogleLoading(false)
     }
+  }
+
+  const handleSetupPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setGoogleError('')
+    if (setupPasswordVal.length < 8) {
+      return setGoogleError('Password must be at least 8 characters')
+    }
+
+    setGoogleLoading(true)
+    try {
+      await apiPost('/auth/setup-password', { password: setupPasswordVal }, tempAccessToken)
+      setShowPasswordSetup(false)
+      setShowGooglePrompt(false)
+      navigate('/chat')
+    } catch (err: any) {
+      setGoogleError(err.message || 'Failed to setup password. Please try again.')
+    } finally {
+      setGoogleLoading(false)
+    }
+  }
+
+  const handleSkipPasswordSetup = () => {
+    setShowPasswordSetup(false)
+    setShowGooglePrompt(false)
+    navigate('/chat')
   }
 
   const handleResendOtp = async () => {
@@ -336,7 +367,35 @@ export default function RegisterPage() {
             
             {googleError && <div className="error-msg">{googleError}</div>}
             
-            {!otpSent ? (
+            {showPasswordSetup ? (
+              <form onSubmit={handleSetupPasswordSubmit}>
+                <p className="subtitle">
+                  Create a password to sign in using email + password in the future. You can also do this later or skip it now.
+                </p>
+                <div className="form-group">
+                  <label htmlFor="setupPasswordInput">Password (Optional)</label>
+                  <input
+                    id="setupPasswordInput"
+                    name="setupPassword"
+                    type="password"
+                    value={setupPasswordVal}
+                    onChange={(e) => setSetupPasswordVal(e.target.value)}
+                    placeholder="Min. 8 characters"
+                    minLength={8}
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+                  <button type="submit" className="btn" disabled={googleLoading}>
+                    {googleLoading ? 'Saving...' : 'Set Password'}
+                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={handleSkipPasswordSetup}>
+                    Skip
+                  </button>
+                </div>
+              </form>
+            ) : !otpSent ? (
               <form onSubmit={handleGoogleRegisterSubmit}>
                 <p className="subtitle">Set up your workspace under Google Federated Sign-On</p>
                 <div className="form-group">
