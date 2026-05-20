@@ -79,3 +79,58 @@ async def get_usage_summary(
         completion_tokens=row.completion_tokens or 0,
         total_tokens=row.total_tokens or 0,
     )
+
+
+class DailyUsageItem(BaseModel):
+    date: str
+    requests: int
+    tokens: int
+
+
+@router.get("/daily", response_model=list[DailyUsageItem])
+async def get_daily_usage(
+    org_id: str | None = Query(None, description="Filter by Org ID (platform_admin only)"),
+    user: CurrentUser = Depends(require_role("platform_admin", "org_admin", "operator", "viewer")),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get daily usage breakdown for the last 15 days.
+    """
+    day_col = func.date(UsageLog.created_at).label("day")
+    stmt = (
+        select(
+            day_col,
+            func.count(UsageLog.id).label("requests"),
+            func.sum(UsageLog.total_tokens).label("tokens"),
+        )
+        .group_by(day_col)
+        .order_by(day_col.asc())
+    )
+
+    # RBAC logic
+    if user.role == "platform_admin":
+        if org_id:
+            stmt = stmt.where(UsageLog.org_id == uuid.UUID(org_id))
+    elif user.role == "org_admin":
+        stmt = stmt.where(UsageLog.org_id == uuid.UUID(user.org_id))
+    else:
+        stmt = stmt.where(UsageLog.user_id == uuid.UUID(user.user_id))
+
+    # Date filtering (last 15 days)
+    now = datetime.now(timezone.utc)
+    dt_start = now - timedelta(days=14)
+    stmt = stmt.where(UsageLog.created_at >= dt_start, UsageLog.created_at <= now)
+
+    result = await db.execute(stmt)
+    rows = result.all()
+
+    data_map = {str(r.day): (r.requests or 0, r.tokens or 0) for r in rows}
+
+    output = []
+    for i in range(14, -1, -1):
+        day_date = (now - timedelta(days=i)).date()
+        date_str = day_date.isoformat()
+        reqs, tokens = data_map.get(date_str, (0, 0))
+        output.append(DailyUsageItem(date=date_str, requests=reqs, tokens=tokens))
+
+    return output

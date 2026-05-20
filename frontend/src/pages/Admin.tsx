@@ -450,14 +450,25 @@ function KeysTab({ token }: { token: string | null }) {
 
 // ── Usage Tab ───────────────────────────────────────────────────────────────
 
+interface DailyUsageItem {
+  date: string
+  requests: number
+  tokens: number
+}
+
 function UsageTab({ token }: { token: string | null }) {
   const [summary, setSummary] = useState<UsageSummary | null>(null)
+  const [daily, setDaily] = useState<DailyUsageItem[]>([])
+  const [chartMetric, setChartMetric] = useState<'requests' | 'tokens'>('requests')
+  const [hoveredPoint, setHoveredPoint] = useState<any | null>(null)
 
   const load = useCallback(async () => {
     if (!token) return
     try {
-      const data = await apiGet<UsageSummary>('/admin/usage/summary', token)
-      setSummary(data)
+      const sumData = await apiGet<UsageSummary>('/admin/usage/summary', token)
+      setSummary(sumData)
+      const dailyData = await apiGet<DailyUsageItem[]>('/admin/usage/daily', token)
+      setDaily(dailyData)
     } catch { /* */ }
   }, [token])
 
@@ -465,10 +476,32 @@ function UsageTab({ token }: { token: string | null }) {
 
   if (!summary) return <div className="admin-section">Loading...</div>
 
+  // SVG Chart Dimensions
+  const width = 600
+  const height = 240
+  const padding = 40
+
+  // Calculate points
+  const maxVal = Math.max(...daily.map(d => d[chartMetric]), 10)
+  
+  const points = daily.map((d, index) => {
+    const x = padding + (index / (daily.length - 1 || 1)) * (width - padding * 2)
+    const y = height - padding - (d[chartMetric] / maxVal) * (height - padding * 2)
+    return { x, y, ...d }
+  })
+
+  const pathD = points.length > 0 
+    ? `M ${points[0].x} ${points[0].y} ` + points.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ')
+    : ''
+
+  const areaD = points.length > 0
+    ? `${pathD} L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z`
+    : ''
+
   return (
-    <div className="admin-section">
+    <div className="admin-section" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div className="section-header">
-        <h2>Usage Summary (Last 30 Days)</h2>
+        <h2>Usage Summary</h2>
       </div>
 
       <div className="usage-stats-grid">
@@ -487,6 +520,174 @@ function UsageTab({ token }: { token: string | null }) {
         <div className="stat-card">
           <div className="stat-label">Completion Tokens</div>
           <div className="stat-value">{summary.completion_tokens.toLocaleString()}</div>
+        </div>
+      </div>
+
+      {/* SVG Chart Container */}
+      <div className="stat-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>Usage History</h3>
+            <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Daily breakdown for the last 15 days</p>
+          </div>
+          <div className="btn-group" style={{ display: 'flex', background: 'var(--bg-input)', padding: '4px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+            <button
+              onClick={() => setChartMetric('requests')}
+              style={{
+                background: chartMetric === 'requests' ? 'var(--accent)' : 'none',
+                color: chartMetric === 'requests' ? '#ffffff' : 'var(--text-primary)',
+                border: 'none',
+                padding: '6px 12px',
+                borderRadius: '4px',
+                fontSize: '0.8rem',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all var(--transition)'
+              }}
+            >
+              Requests
+            </button>
+            <button
+              onClick={() => setChartMetric('tokens')}
+              style={{
+                background: chartMetric === 'tokens' ? 'var(--accent)' : 'none',
+                color: chartMetric === 'tokens' ? '#ffffff' : 'var(--text-primary)',
+                border: 'none',
+                padding: '6px 12px',
+                borderRadius: '4px',
+                fontSize: '0.8rem',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all var(--transition)'
+              }}
+            >
+              Tokens
+            </button>
+          </div>
+        </div>
+
+        <div style={{ position: 'relative', width: '100%' }}>
+          <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: 'auto', display: 'block', overflow: 'visible' }}>
+            {/* Grid lines */}
+            {[0, 0.25, 0.5, 0.75, 1].map((ratio, index) => {
+              const y = padding + ratio * (height - padding * 2)
+              const val = Math.round(maxVal - ratio * maxVal)
+              return (
+                <g key={index}>
+                  <line
+                    x1={padding}
+                    y1={y}
+                    x2={width - padding}
+                    y2={y}
+                    stroke="var(--border)"
+                    strokeWidth="1"
+                    strokeDasharray="4 4"
+                  />
+                  <text
+                    x={padding - 10}
+                    y={y + 4}
+                    fill="var(--text-muted)"
+                    fontSize="10"
+                    textAnchor="end"
+                  >
+                    {val.toLocaleString()}
+                  </text>
+                </g>
+              )
+            })}
+
+            {/* Filled Area */}
+            {areaD && (
+              <path
+                d={areaD}
+                fill="url(#chartGradient)"
+                opacity="0.15"
+              />
+            )}
+
+            {/* Line path */}
+            {pathD && (
+              <path
+                d={pathD}
+                fill="none"
+                stroke="var(--accent)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            )}
+
+            {/* Definitions for gradient */}
+            <defs>
+              <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--accent)" />
+                <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+
+            {/* Dots */}
+            {points.map((p, index) => (
+              <circle
+                key={index}
+                cx={p.x}
+                cy={p.y}
+                r={hoveredPoint?.date === p.date ? 6 : 4}
+                fill={hoveredPoint?.date === p.date ? 'var(--accent)' : 'var(--bg-card)'}
+                stroke="var(--accent)"
+                strokeWidth="2"
+                style={{ cursor: 'pointer', transition: 'all 0.1s' }}
+                onMouseEnter={() => setHoveredPoint(p)}
+                onMouseLeave={() => setHoveredPoint(null)}
+              />
+            ))}
+
+            {/* X-axis labels (just first, middle, and last date for clean look) */}
+            {points.length > 0 && (
+              <>
+                <text x={points[0].x} y={height - padding + 18} fill="var(--text-muted)" fontSize="10" textAnchor="middle">
+                  {new Date(points[0].date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                </text>
+                <text x={points[Math.floor(points.length / 2)].x} y={height - padding + 18} fill="var(--text-muted)" fontSize="10" textAnchor="middle">
+                  {new Date(points[Math.floor(points.length / 2)].date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                </text>
+                <text x={points[points.length - 1].x} y={height - padding + 18} fill="var(--text-muted)" fontSize="10" textAnchor="middle">
+                  {new Date(points[points.length - 1].date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                </text>
+              </>
+            )}
+          </svg>
+
+          {/* Interactive Tooltip */}
+          {hoveredPoint && (
+            <div
+              style={{
+                position: 'absolute',
+                left: `${(hoveredPoint.x / width) * 100}%`,
+                top: `${(hoveredPoint.y / height) * 100 - 15}%`,
+                transform: 'translate(-50%, -100%)',
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '8px 12px',
+                boxShadow: 'var(--shadow-md)',
+                fontSize: '0.8rem',
+                color: 'var(--text-primary)',
+                pointerEvents: 'none',
+                zIndex: 10,
+                whiteSpace: 'nowrap',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '2px'
+              }}
+            >
+              <span style={{ fontWeight: '600' }}>
+                {new Date(hoveredPoint.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+              </span>
+              <span style={{ color: 'var(--accent)', fontWeight: '700' }}>
+                {hoveredPoint[chartMetric].toLocaleString()} {chartMetric}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>
