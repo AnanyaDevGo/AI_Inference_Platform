@@ -140,12 +140,14 @@ async def verify_google_id_token(token: str) -> dict:
 
 def set_refresh_cookie(response: Response, refresh_token: str):
     """Securely set the refresh token inside a secure, httpOnly cookie."""
+    from app.config import get_settings
+    settings = get_settings()
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=False,  # Set to True in production with HTTPS
-        samesite="lax",  # CSRF-safe setting
+        secure=settings.COOKIE_SECURE,
+        samesite=settings.COOKIE_SAMESITE,
         path="/auth",
         max_age=604800,  # 7 days
     )
@@ -159,49 +161,56 @@ async def register(
     response: Response,
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
-    existing = await get_user_by_email(db, req.email)
-    if existing:
-        raise ValidationError("An account with this email already exists")
+    try:
+        existing = await get_user_by_email(db, req.email)
+        if existing:
+            raise ValidationError("An account with this email already exists")
 
-    is_new = False
-    if req.org_name:
-        org, is_new = await get_or_create_custom_org(db, req.org_name)
-    else:
-        org = await get_or_create_default_org(db)
+        is_new = False
+        if req.org_name:
+            org, is_new = await get_or_create_custom_org(db, req.org_name)
+        else:
+            org = await get_or_create_default_org(db)
 
-    total = await count_users(db)
-    role = "platform_admin" if total == 0 else ("org_admin" if is_new else "viewer")
+        total = await count_users(db)
+        role = "platform_admin" if total == 0 else ("org_admin" if is_new else "viewer")
 
-    user = User(
-        org_id=org.id,
-        name=req.name,
-        email=req.email,
-        password_hash=hash_password(req.password),
-        role=role,
-        auth_provider="local",
-        is_active=True,
-        is_verified=True,
-        password_set=True,
-        last_login_at=datetime.now(timezone.utc),
-    )
-    db.add(user)
-    await db.flush()
-    await db.refresh(user)
+        user = User(
+            org_id=org.id,
+            name=req.name,
+            email=req.email,
+            password_hash=hash_password(req.password),
+            role=role,
+            auth_provider="local",
+            is_active=True,
+            is_verified=True,
+            password_set=True,
+            last_login_at=datetime.now(timezone.utc),
+        )
+        db.add(user)
+        await db.flush()
+        await db.refresh(user)
 
-    # Issue Tokens
-    access_token = create_access_token(user)
-    refresh_token, jti = create_refresh_token(user)
-    await store_active_refresh_token(str(user.id), jti, 604800)
-    set_refresh_cookie(response, refresh_token)
+        # Issue Tokens
+        access_token = create_access_token(user)
+        refresh_token, jti = create_refresh_token(user)
+        await store_active_refresh_token(str(user.id), jti, 604800)
+        set_refresh_cookie(response, refresh_token)
 
-    logger.info("user_registered", email=req.email, role=role, org=org.slug)
+        logger.info("user_registration_success", email=req.email, role=role, org=org.slug)
 
-    return TokenResponse(
-        access_token=access_token,
-        user_name=user.name,
-        user_email=user.email,
-        requires_otp=False,
-    )
+        return TokenResponse(
+            access_token=access_token,
+            user_name=user.name,
+            user_email=user.email,
+            requires_otp=False,
+        )
+    except ValidationError as e:
+        logger.warning("user_registration_failed_validation", email=req.email, error=e.message)
+        raise e
+    except Exception as e:
+        logger.error("user_registration_failed_unexpected", email=req.email, error=str(e))
+        raise e
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -210,30 +219,43 @@ async def login(
     response: Response,
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
-    user = await authenticate_user(db, req.email, req.password)
-    
-    # Check verification status
-    if not user.is_verified:
-        raise ValidationError("This account is not verified. Please verify using Google sign-in.")
+    try:
+        user = await authenticate_user(db, req.email, req.password)
+        
+        # Check verification status
+        if not user.is_verified:
+            raise ValidationError("This account is not verified. Please verify using Google sign-in.")
 
-    # Update last login time
-    user.last_login_at = datetime.now(timezone.utc)
-    await db.flush()
+        # Update last login time
+        user.last_login_at = datetime.now(timezone.utc)
+        await db.flush()
 
-    # Issue Tokens
-    access_token = create_access_token(user)
-    refresh_token, jti = create_refresh_token(user)
-    await store_active_refresh_token(str(user.id), jti, 604800)
-    set_refresh_cookie(response, refresh_token)
+        # Issue Tokens
+        access_token = create_access_token(user)
+        refresh_token, jti = create_refresh_token(user)
+        await store_active_refresh_token(str(user.id), jti, 604800)
+        set_refresh_cookie(response, refresh_token)
 
-    logger.info("user_login", email=req.email)
+        logger.info("user_login_success", email=req.email)
 
-    return TokenResponse(
-        access_token=access_token,
-        user_name=user.name,
-        user_email=user.email,
-        requires_otp=False,
-    )
+        return TokenResponse(
+            access_token=access_token,
+            user_name=user.name,
+            user_email=user.email,
+            requires_otp=False,
+        )
+    except ValidationError as e:
+        logger.warning("user_login_failed_validation", email=req.email, error=e.message)
+        raise e
+    except InvalidCredentialsError as e:
+        logger.warning("user_login_failed_invalid_credentials", email=req.email)
+        raise e
+    except UnauthorizedError as e:
+        logger.warning("user_login_failed_unauthorized", email=req.email, error=e.message)
+        raise e
+    except Exception as e:
+        logger.error("user_login_failed_unexpected", email=req.email, error=str(e))
+        raise e
 
 
 # ── Production-Grade Google OAuth Endpoints ──────────────────────────────────

@@ -1,0 +1,65 @@
+# InferVoyage — Load Testing Docker Compose
+# Runs Locust master + scalable workers against the platform
+#
+# Usage:
+#   # Start the platform first
+#   docker-compose up -d
+#
+#   # Start load test (4 workers, access UI at http://localhost:8089)
+#   docker-compose -f docker-compose.yml -f load_testing/docker-compose.loadtest.yml up \
+#     --scale locust-worker=4 locust-master locust-worker
+#
+#   # Headless CI run (50 users, 5 min)
+#   docker-compose -f docker-compose.yml -f load_testing/docker-compose.loadtest.yml run \
+#     locust-master locust --headless --users 50 --spawn-rate 5 \
+#     --run-time 5m --html /reports/report.html --csv /reports/stats
+
+services:
+
+  locust-master:
+    build:
+      context: ./load_testing/locust
+      dockerfile: Dockerfile
+    image: infervoyage-locust:latest
+    command: >
+      --master
+      --host=${LOCUST_HOST:-http://api:8000}
+      --web-port=8089
+    ports:
+      - "8089:8089"   # Locust Web UI
+      - "5557:5557"   # Worker communication port
+    volumes:
+      - ./load_testing/locust/reports:/reports
+    environment:
+      - LOCUST_HOST=${LOCUST_HOST:-http://api:8000}
+      - TEST_USER_EMAIL=${TEST_USER_EMAIL:-loadtest@infervoyage.local}
+      - TEST_USER_PASSWORD=${TEST_USER_PASSWORD:-LoadTest@12345}
+      - MODEL_NAME=${MODEL_NAME:-llama3}
+      - THRESHOLD_P95_MS=${THRESHOLD_P95_MS:-3000}
+      - THRESHOLD_ERROR_RATE=${THRESHOLD_ERROR_RATE:-0.02}
+    networks:
+      - inference_platform
+    depends_on:
+      - locust-worker
+
+  locust-worker:
+    image: infervoyage-locust:latest
+    command: --worker --master-host=locust-master
+    environment:
+      - LOCUST_HOST=${LOCUST_HOST:-http://api:8000}
+      - TEST_USER_EMAIL=${TEST_USER_EMAIL:-loadtest@infervoyage.local}
+      - TEST_USER_PASSWORD=${TEST_USER_PASSWORD:-LoadTest@12345}
+      - MODEL_NAME=${MODEL_NAME:-llama3}
+    networks:
+      - inference_platform
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 256M
+
+networks:
+  inference_platform:
+    external: true
+    name: inference_platform

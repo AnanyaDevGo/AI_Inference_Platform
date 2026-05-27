@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "infervoyage.frontend.fullname" . }}
+  labels:
+    {{- include "infervoyage.labels" . | nindent 4 }}
+    component: frontend
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      {{- include "infervoyage.selectorLabels" . | nindent 6 }}
+      component: frontend
+  template:
+    metadata:
+      labels:
+        {{- include "infervoyage.selectorLabels" . | nindent 8 }}
+        component: frontend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+      containers:
+        - name: frontend
+          image: "{{ .Values.frontend.image }}"
+          imagePullPolicy: {{ .Values.frontend.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+          resources:
+            {{- toYaml .Values.frontend.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10

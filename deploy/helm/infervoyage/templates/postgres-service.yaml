@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "infervoyage.postgres.fullname" . }}
+  labels:
+    {{- include "infervoyage.labels" . | nindent 4 }}
+    component: postgres
+spec:
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+    - name: metrics
+      port: 9187
+      targetPort: metrics
+  selector:
+    {{- include "infervoyage.selectorLabels" . | nindent 4 }}
+    component: postgres
+  type: ClusterIP

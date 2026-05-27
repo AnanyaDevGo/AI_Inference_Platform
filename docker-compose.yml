@@ -147,6 +147,73 @@ services:
           cpus: "0.2"
           memory: 64M
 
+  # ── PostgreSQL Exporter ───────────────────────────────────────────────────────
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-appuser}:${POSTGRES_PASSWORD:-apppassword}@db:5432/${POSTGRES_DB:-inference_platform}?sslmode=disable"
+    depends_on:
+      db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 64M
+
+  # ── Redis Exporter ────────────────────────────────────────────────────────────
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.58.0
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: "redis:6379"
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 64M
+
+  # ── Container Metrics (cAdvisor) ──────────────────────────────────────────────
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    restart: unless-stopped
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+
+  # ── Host System Metrics (Node Exporter) ───────────────────────────────────────
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 64M
+
 volumes:
   db_data:
   prometheus_data:

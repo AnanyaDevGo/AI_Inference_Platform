@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: locust-master
+  namespace: infervoyage-dev
+  labels:
+    app: locust-master
+spec:
+  ports:
+    - name: web
+      port: 8089
+      targetPort: web
+    - name: worker
+      port: 5557
+      targetPort: worker
+  selector:
+    app: locust-master
+  type: ClusterIP

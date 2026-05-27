@@ -1,0 +1,47 @@
+global:
+  environment: staging
+
+ingress:
+  hostname: "staging.infervoyage.local"
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  tls:
+    enabled: true
+    secretName: "staging-infervoyage-tls"
+
+api:
+  replicas: 2
+  secretKey: "stagingsecretkey12345678901234567890123"
+  autoscaling:
+    minReplicas: 2
+    maxReplicas: 5
+
+ollama:
+  replicas: 1
+  resources:
+    requests:
+      cpu: "2.0"
+      memory: 4Gi
+    limits:
+      cpu: "4.0"
+      memory: 6Gi
+
+postgres:
+  storageSize: "20Gi"
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: "1.5"
+      memory: 1Gi
+
+redis:
+  maxmemory: "256mb"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi

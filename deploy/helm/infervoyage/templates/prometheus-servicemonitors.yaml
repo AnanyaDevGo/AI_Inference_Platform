@@ -1,0 +1,52 @@
+{{- if .Values.observability.prometheusOperator.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "infervoyage.fullname" . }}-api-monitor
+  labels:
+    {{- include "infervoyage.labels" . | nindent 4 }}
+    release: {{ .Values.observability.prometheusOperator.releaseLabel | default "prometheus" | quote }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "infervoyage.selectorLabels" . | nindent 6 }}
+      component: api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "infervoyage.fullname" . }}-postgres-monitor
+  labels:
+    {{- include "infervoyage.labels" . | nindent 4 }}
+    release: {{ .Values.observability.prometheusOperator.releaseLabel | default "prometheus" | quote }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "infervoyage.selectorLabels" . | nindent 6 }}
+      component: postgres
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "infervoyage.fullname" . }}-redis-monitor
+  labels:
+    {{- include "infervoyage.labels" . | nindent 4 }}
+    release: {{ .Values.observability.prometheusOperator.releaseLabel | default "prometheus" | quote }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "infervoyage.selectorLabels" . | nindent 6 }}
+      component: redis
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 10s
+{{- end }}

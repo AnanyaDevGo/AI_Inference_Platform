@@ -1,0 +1,39 @@
+{{- if .Values.locust.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "infervoyage.locust.fullname" . }}-worker
+  labels:
+    {{- include "infervoyage.labels" . | nindent 4 }}
+    component: locust-worker
+spec:
+  replicas: {{ .Values.locust.worker.replicas }}
+  selector:
+    matchLabels:
+      {{- include "infervoyage.selectorLabels" . | nindent 6 }}
+      component: locust-worker
+  template:
+    metadata:
+      labels:
+        {{- include "infervoyage.selectorLabels" . | nindent 8 }}
+        component: locust-worker
+    spec:
+      containers:
+        - name: locust-worker
+          image: "{{ .Values.locust.worker.image }}"
+          imagePullPolicy: {{ .Values.locust.worker.pullPolicy }}
+          args:
+            - --worker
+            - --master-host={{ include "infervoyage.locust.fullname" . }}-master
+          env:
+            - name: LOCUST_HOST
+              value: "http://{{ include "infervoyage.api.fullname" . }}:8000"
+            - name: TEST_USER_EMAIL
+              value: "loadtest@infervoyage.local"
+            - name: TEST_USER_PASSWORD
+              value: "LoadTest@12345"
+            - name: MODEL_NAME
+              value: {{ .Values.api.modelName | quote }}
+          resources:
+            {{- toYaml .Values.locust.worker.resources | nindent 12 }}
+{{- end }}

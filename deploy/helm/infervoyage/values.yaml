@@ -1,0 +1,150 @@
+# Default values for infervoyage.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  environment: dev # dev, staging, prod
+
+# ── General Configuration ─────────────────────────────────────────────────────
+appName: "InferVoyage"
+appVersion: "1.0.0"
+
+# ── PostgreSQL Config ─────────────────────────────────────────────────────────
+postgres:
+  image: "postgres:16-alpine"
+  pullPolicy: "IfNotPresent"
+  replicas: 1
+  storageClass: "standard"
+  storageSize: "10Gi"
+  db: "inference_platform"
+  user: "appuser"
+  password: "apppassword" # In production, set via override or secretKeyRef
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1.0"
+      memory: 512Mi
+
+# ── Redis Config ──────────────────────────────────────────────────────────────
+redis:
+  image: "redis:7-alpine"
+  pullPolicy: "IfNotPresent"
+  replicas: 1
+  maxmemory: "100mb"
+  maxmemoryPolicy: "allkeys-lru"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+# ── Ollama Config ─────────────────────────────────────────────────────────────
+ollama:
+  image: "ollama/ollama:latest"
+  pullPolicy: "IfNotPresent"
+  replicas: 1
+  storageClass: "standard"
+  storageSize: "20Gi"
+  gpu:
+    enabled: false # Set true in values-prod.yaml to request GPUs
+    limits:
+      "nvidia.com/gpu": "1"
+  resources:
+    requests:
+      cpu: "1.0"
+      memory: 2Gi
+    limits:
+      cpu: "4.0"
+      memory: 4Gi
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 80
+
+# ── FastAPI Backend Config ────────────────────────────────────────────────────
+api:
+  image: "infervoyage-api:latest"
+  pullPolicy: "IfNotPresent"
+  replicas: 2
+  secretKey: "secretkey12345678901234567890123" # Replace with secure key in values-prod.yaml
+  modelName: "llama3"
+  mail:
+    server: "mailpit"
+    port: "1025"
+    from: "noreply@infervoyage.local"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 75
+
+# ── React Frontend Config ─────────────────────────────────────────────────────
+frontend:
+  image: "infervoyage-frontend:latest"
+  pullPolicy: "IfNotPresent"
+  replicas: 2
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+# ── Ingress Routing ───────────────────────────────────────────────────────────
+ingress:
+  enabled: true
+  className: "nginx"
+  hostname: "infervoyage.local"
+  annotations:
+    nginx.ingress.kubernetes.io/limit-rps: "10"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "2"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  tls:
+    enabled: false
+    secretName: "infervoyage-tls-cert"
+
+# ── Locust Load Tester Config ──────────────────────────────────────────────────
+locust:
+  enabled: true
+  master:
+    image: "infervoyage-locust:latest"
+    pullPolicy: "IfNotPresent"
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+  worker:
+    image: "infervoyage-locust:latest"
+    pullPolicy: "IfNotPresent"
+    replicas: 2
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+
+# ── Prometheus Observability Config ───────────────────────────────────────────
+observability:
+  prometheusOperator:
+    enabled: true
+    releaseLabel: "prometheus"

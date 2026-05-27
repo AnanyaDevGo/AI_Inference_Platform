@@ -13,6 +13,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
+        env_list_delimiter=",",
     )
 
     # ── Application ────────────────────────────────────────────────
@@ -53,15 +54,27 @@ class Settings(BaseSettings):
     MAX_CONCURRENT_INFERENCE: int = 4
 
     # ── CORS ───────────────────────────────────────────────────────────────
-    # Stored as comma-separated string in .env; parsed into list at load time.
-    ALLOWED_ORIGINS_STR: str = "http://localhost:3000,http://localhost:80"
+    ALLOWED_ORIGINS: list[str] | str = [
+        "http://localhost:3000",
+        "http://localhost:80",
+        "https://localhost",
+        "http://127.0.0.1",
+        "https://127.0.0.1",
+    ]
+
+    # ── Cookies ────────────────────────────────────────────────────────────
+    COOKIE_SECURE: bool = False
+    COOKIE_SAMESITE: Literal["lax", "strict", "none"] = "lax"
 
     # ── Retention ──────────────────────────────────────────────────────────────
     USAGE_LOG_RETENTION_DAYS: int = 90
 
-    @property
-    def ALLOWED_ORIGINS(self) -> list[str]:  # noqa: N802
-        return [o.strip() for o in self.ALLOWED_ORIGINS_STR.split(",") if o.strip()]
+    @field_validator("ALLOWED_ORIGINS", mode="before")
+    @classmethod
+    def parse_allowed_origins(cls, v: str | list[str]) -> list[str]:
+        if isinstance(v, str):
+            return [o.strip() for o in v.split(",") if o.strip()]
+        return v
 
     @field_validator("SECRET_KEY")
     @classmethod

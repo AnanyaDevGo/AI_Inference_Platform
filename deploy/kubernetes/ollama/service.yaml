@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: infervoyage-dev
+  labels:
+    app: ollama
+spec:
+  ports:
+    - name: api
+      port: 11434
+      targetPort: api
+  selector:
+    app: ollama
+  type: ClusterIP

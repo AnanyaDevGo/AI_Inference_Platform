@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: infervoyage-dev
+  labels:
+    app: ollama
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      containers:
+        - name: ollama
+          image: ollama/ollama:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: api
+              containerPort: 11434
+          resources:
+            requests:
+              cpu: "1.0"
+              memory: 2Gi
+            limits:
+              cpu: "4.0"
+              memory: 4Gi
+              # To enable GPU acceleration, uncomment the nvidia resource limits
+              # below. Make sure Nvidia GPU device plugin is installed in cluster.
+              # nvidia.com/gpu: "1"
+          env:
+            # Tell Ollama where to listen and cache
+            - name: OLLAMA_HOST
+              value: "0.0.0.0"
+          volumeMounts:
+            - name: storage
+              mountPath: /root/.ollama
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 11434
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/tags
+              port: 11434
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+      # Tolerations and NodeAffinity options for GPU scheduling (uncomment if using GPU node pools)
+      # tolerations:
+      #   - key: "nvidia.com/gpu"
+      #     operator: "Exists"
+      #     effect: "NoSchedule"
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #         - matchExpressions:
+      #             - key: "cloud.google.com/gke-gpu" # or provider-specific GPU key
+      #               operator: "Exists"
+
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: ollama-pvc

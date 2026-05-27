@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { useThemeStore } from '../stores/themeStore'
@@ -34,9 +34,9 @@ export default function AdminPage() {
     <div className="admin-layout">
       <header className="admin-header">
         <div className="header-left">
-          <button className="btn-back" onClick={() => navigate('/chat')} title="Back to Chat">â† Chat</button>
+          <button className="btn-back" onClick={() => navigate('/chat')} title="Back to Chat">&larr; Chat</button>
           <div className="logo">
-            <div className="logo-icon">âš™</div>
+            <div className="logo-icon">&#9881;</div>
             <span className="logo-text">Admin Panel</span>
           </div>
           <span className="role-badge">{ROLE_NAMES[role || 'viewer']}</span>
@@ -62,7 +62,7 @@ export default function AdminPage() {
             onMouseLeave={(e) => { e.currentTarget.style.background = 'none' }}
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
-            {theme === 'dark' ? 'â˜€ï¸' : 'ðŸŒ™'}
+            {theme === 'dark' ? '☀️' : '🌙'}
           </button>
           <div className="user-info">
             <div className="user-avatar">{initials}</div>
@@ -412,7 +412,7 @@ function KeysTab({ token }: { token: string | null }) {
 
       {createdKey && (
         <div className="key-created-banner">
-          <strong>âš  Save this key â€” it won't be shown again!</strong>
+          <strong>&#9888; Save this key &mdash; it won't be shown again!</strong>
           <code className="key-display">{createdKey}</code>
           <button className="btn-sm" onClick={() => { navigator.clipboard.writeText(createdKey); }}>Copy</button>
         </div>
@@ -486,14 +486,14 @@ function UsageTab({ token }: { token: string | null }) {
 
   if (loading) return (
     <div className="admin-section" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px', gap: '12px', color: 'var(--text-muted)' }}>
-      <span style={{ fontSize: '1.5rem', animation: 'spin 1s linear infinite' }}>âŸ³</span>
-      Loading usage dataâ€¦
+      <span style={{ fontSize: '1.5rem', animation: 'spin 1s linear infinite' }}>&#8635;</span>
+      Loading usage data...
     </div>
   )
 
   if (error) return (
     <div className="admin-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '300px', gap: '16px' }}>
-      <div style={{ color: 'var(--error)', fontSize: '2rem' }}>âš ï¸</div>
+      <div style={{ color: 'var(--error)', fontSize: '2rem' }}>&#9888;</div>
       <div style={{ color: 'var(--error)', fontWeight: '600' }}>Failed to load usage data</div>
       <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{error}</div>
       <button className="btn-primary-sm" onClick={load}>Retry</button>
@@ -526,7 +526,7 @@ function UsageTab({ token }: { token: string | null }) {
     <div className="admin-section" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div className="section-header">
         <h2>Usage Summary</h2>
-        <button className="btn-primary-sm" onClick={load} title="Refresh data" style={{ minWidth: '90px' }}>â†» Refresh</button>
+        <button className="btn-primary-sm" onClick={load} title="Refresh data" style={{ minWidth: '90px' }}>&#8634; Refresh</button>
       </div>
 
       <div className="usage-stats-grid">
@@ -594,7 +594,7 @@ function UsageTab({ token }: { token: string | null }) {
         <div style={{ position: 'relative', width: '100%' }}>
           {daily.every(d => d[chartMetric] === 0) ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '200px', gap: '10px', color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: '2.5rem' }}>ðŸ“Š</div>
+              <div style={{ fontSize: '2.5rem' }}>📊</div>
               <div style={{ fontWeight: '600', fontSize: '0.95rem', color: 'var(--text-secondary)' }}>No usage data yet</div>
               <div style={{ fontSize: '0.8rem' }}>Send some chat messages to see data appear here</div>
             </div>

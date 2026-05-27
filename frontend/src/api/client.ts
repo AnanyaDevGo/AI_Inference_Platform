@@ -7,6 +7,58 @@ interface ApiError {
   error: { code: string; message: string; request_id?: string }
 }
 
+/**
+ * Perform a fetch request and intercept network/CORS connectivity issues with detailed diagnostics.
+ */
+async function performFetch(url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init)
+  } catch (err: any) {
+    console.error('API connectivity failure:', err)
+    let message = 'Network connection failed'
+    if (err && err.message) {
+      if (err.message.includes('Failed to fetch') || err.name === 'TypeError') {
+        message = 'Connection to the backend API failed. This could be due to a CORS origin rejection, an untrusted self-signed SSL/TLS certificate, or the backend service being offline. Please check browser console logs or visit https://localhost/health/diagnostics.'
+      } else {
+        message = `API connection error: ${err.message}`
+      }
+    }
+    throw new Error(message)
+  }
+}
+
+/**
+ * Handle API responses, parsing JSON error envelopes or falling back to raw text for gateway failures.
+ */
+async function handleResponse<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    if (res.status === 401) {
+      useAuthStore.getState().logout()
+      window.location.href = '/login'
+    }
+
+    let errorMessage = `Request failed (status ${res.status})`
+    try {
+      const data = (await res.json()) as ApiError
+      errorMessage = data.error?.message || errorMessage
+    } catch {
+      try {
+        const text = await res.text()
+        errorMessage = `Server Error (${res.status}): ${text.substring(0, 150)}`
+      } catch {
+        errorMessage = `Server responded with status ${res.status} (no details)`
+      }
+    }
+    throw new Error(errorMessage)
+  }
+
+  if (res.status === 204) {
+    return {} as T
+  }
+
+  return res.json() as Promise<T>
+}
+
 export async function apiPost<T>(
   path: string,
   body: Record<string, unknown>,
@@ -15,23 +67,14 @@ export async function apiPost<T>(
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = `Bearer ${token}`
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await performFetch(`${API_BASE}${path}`, {
     method: 'POST',
     headers,
     body: JSON.stringify(body),
     credentials: 'include',
   })
 
-  if (!res.ok) {
-    if (res.status === 401) {
-      useAuthStore.getState().logout()
-      window.location.href = '/login'
-    }
-    const data = (await res.json()) as ApiError
-    throw new Error(data.error?.message || `Request failed (${res.status})`)
-  }
-
-  return res.json() as Promise<T>
+  return handleResponse<T>(res)
 }
 
 export async function apiGet<T>(
@@ -41,21 +84,12 @@ export async function apiGet<T>(
   const headers: Record<string, string> = {}
   if (token) headers['Authorization'] = `Bearer ${token}`
 
-  const res = await fetch(`${API_BASE}${path}`, { 
+  const res = await performFetch(`${API_BASE}${path}`, { 
     headers,
     credentials: 'include',
   })
 
-  if (!res.ok) {
-    if (res.status === 401) {
-      useAuthStore.getState().logout()
-      window.location.href = '/login'
-    }
-    const data = (await res.json()) as ApiError
-    throw new Error(data.error?.message || `Request failed (${res.status})`)
-  }
-
-  return res.json() as Promise<T>
+  return handleResponse<T>(res)
 }
 
 export async function apiDelete(
@@ -65,20 +99,13 @@ export async function apiDelete(
   const headers: Record<string, string> = {}
   if (token) headers['Authorization'] = `Bearer ${token}`
 
-  const res = await fetch(`${API_BASE}${path}`, { 
+  const res = await performFetch(`${API_BASE}${path}`, { 
     method: 'DELETE', 
     headers,
     credentials: 'include',
   })
 
-  if (!res.ok && res.status !== 204) {
-    if (res.status === 401) {
-      useAuthStore.getState().logout()
-      window.location.href = '/login'
-    }
-    const data = (await res.json()) as ApiError
-    throw new Error(data.error?.message || `Request failed (${res.status})`)
-  }
+  await handleResponse<void>(res)
 }
 
 export async function apiPatch<T>(
@@ -89,19 +116,14 @@ export async function apiPatch<T>(
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = `Bearer ${token}`
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await performFetch(`${API_BASE}${path}`, {
     method: 'PATCH',
     headers,
     body: JSON.stringify(body),
     credentials: 'include',
   })
 
-  if (!res.ok) {
-    const data = (await res.json()) as ApiError
-    throw new Error(data.error?.message || `Request failed (${res.status})`)
-  }
-
-  return res.json() as Promise<T>
+  return handleResponse<T>(res)
 }
 
 export async function apiStreamPost(
@@ -115,16 +137,31 @@ export async function apiStreamPost(
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = `Bearer ${token}`
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-    credentials: 'include',
-  })
+  let res: Response
+  try {
+    res = await performFetch(`${API_BASE}${path}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+      credentials: 'include',
+    })
+  } catch (err: any) {
+    onError(err.message || 'Streaming connection failed')
+    return
+  }
 
   if (!res.ok) {
-    const data = await res.json()
-    onError(data.error?.message || `Request failed (${res.status})`)
+    let errorMessage = `Streaming failed (${res.status})`
+    try {
+      const data = await res.json()
+      errorMessage = data.error?.message || errorMessage
+    } catch {
+      try {
+        const text = await res.text()
+        errorMessage = `Server Error (${res.status}): ${text.substring(0, 150)}`
+      } catch {}
+    }
+    onError(errorMessage)
     return
   }
 

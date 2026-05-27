@@ -135,7 +135,7 @@ Navigate to: **http://localhost**
 
 Default credentials (change immediately after first login):
 - Email: `admin@platform.local`
-- Password: `changeme123`
+- Password: `password123`
 
 ---
 
@@ -189,7 +189,7 @@ docker compose exec api alembic upgrade head
 
 # Create additional admin users
 docker compose exec api python -m app.cli create-user \
-  --email ops@example.com --role platform_admin --password changeme123
+  --email ops@example.com --role platform_admin --password password123
 
 # Tail structured logs
 docker compose logs -f api | python -m json.tool

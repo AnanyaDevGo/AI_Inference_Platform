@@ -1,0 +1,21 @@
+{{- if .Values.locust.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "infervoyage.locust.fullname" . }}-master
+  labels:
+    {{- include "infervoyage.labels" . | nindent 4 }}
+    component: locust-master
+spec:
+  ports:
+    - name: web
+      port: 8089
+      targetPort: web
+    - name: worker
+      port: 5557
+      targetPort: worker
+  selector:
+    {{- include "infervoyage.selectorLabels" . | nindent 4 }}
+    component: locust-master
+  type: ClusterIP
+{{- end }}

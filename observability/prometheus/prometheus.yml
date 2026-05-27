@@ -1,10 +1,54 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  external_labels:
+    platform: "infervoyage"
+    env: "production"
+
+# ── Alerting rules (optional — extend with alertmanager) ─────────────────────
+# rule_files:
+#   - "alerts/*.yml"
 
 scrape_configs:
-  - job_name: "ai_inference_platform"
+
+  # ── FastAPI Application Metrics ──────────────────────────────────────────────
+  - job_name: "infervoyage_api"
     static_configs:
       - targets: ["api:8000"]
     metrics_path: /metrics
+    scrape_interval: 10s
+
+  # ── PostgreSQL Database Metrics ───────────────────────────────────────────────
+  - job_name: "postgres"
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
     scrape_interval: 15s
+
+  # ── Redis Metrics ─────────────────────────────────────────────────────────────
+  - job_name: "redis"
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+    scrape_interval: 10s
+
+  # ── Docker Container Metrics (cAdvisor) ───────────────────────────────────────
+  - job_name: "cadvisor"
+    static_configs:
+      - targets: ["cadvisor:8080"]
+    scrape_interval: 15s
+    metric_relabel_configs:
+      # Only keep metrics for our platform containers
+      - source_labels: [container_label_com_docker_compose_project]
+        regex: "ai_inference_platform|inference_platform"
+        action: keep
+
+  # ── Host System Metrics (Node Exporter) ──────────────────────────────────────
+  - job_name: "node"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+    scrape_interval: 15s
+
+  # ── Prometheus Self-Monitoring ────────────────────────────────────────────────
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+    scrape_interval: 30s

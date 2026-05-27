@@ -49,10 +49,13 @@ class SmtpEmailProvider(BaseEmailProvider):
         self.password = password
 
     async def send_email(self, to_email: str, subject: str, body_text: str, body_html: str | None = None) -> None:
+        from email.utils import make_msgid, formatdate
         msg = MIMEMultipart("alternative")
         msg["From"] = self.user or "noreply@platform.com"
         msg["To"] = to_email
         msg["Subject"] = subject
+        msg["Message-ID"] = make_msgid(domain=self.user.split('@')[-1] if (self.user and '@' in self.user) else "infervoyage.com")
+        msg["Date"] = formatdate(localtime=True)
 
         msg.attach(MIMEText(body_text, "plain"))
         if body_html:
@@ -173,9 +176,66 @@ def get_email_provider() -> BaseEmailProvider:
     return ConsoleEmailProvider()
 
 
+async def _resolve_mx_host(domain: str) -> str | None:
+    """Resolve the primary MX host for a domain using Cloudflare DNS-over-HTTPS API."""
+    url = f"https://cloudflare-dns.com/dns-query?name={domain}&type=MX"
+    headers = {"Accept": "application/dns-json"}
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(url, headers=headers)
+            if resp.status_code == 200:
+                data = resp.json()
+                answers = data.get("Answer", [])
+                if not answers:
+                    return None
+                mx_records = []
+                for ans in answers:
+                    if ans.get("type") == 15:  # MX record type
+                        record_data = ans.get("data", "")
+                        parts = record_data.split()
+                        if len(parts) == 2:
+                            try:
+                                pref = int(parts[0])
+                                host = parts[1].rstrip(".")
+                                mx_records.append((pref, host))
+                            except ValueError:
+                                pass
+                if mx_records:
+                    mx_records.sort(key=lambda x: x[0])
+                    return mx_records[0][1]
+    except Exception:
+        logger.exception("mx_resolution_failed", domain=domain)
+    return None
+
+
 async def send_otp_verification_email(email: str, code: str) -> None:
-    """Send the 6-digit verification code using the dynamically registered provider."""
-    provider = get_email_provider()
+    """Send the 6-digit verification code using configured provider or direct MX delivery fallback."""
+    from app.config import get_settings
+    settings = get_settings()
+    domain = email.split("@")[-1].lower() if "@" in email else ""
+    provider = None
+
+    # 1. If a real provider is explicitly configured (Resend or external SMTP), use it directly
+    use_real_provider = False
+    if settings.RESEND_API_KEY:
+        use_real_provider = True
+    elif settings.SMTP_HOST and settings.SMTP_HOST != "mailpit":
+        use_real_provider = True
+
+    if use_real_provider:
+        provider = get_email_provider()
+    else:
+        # Fallback logic for local development
+        mock_domains = {"example.com", "test.com", "infervoyage.local", "localhost"}
+        if domain and domain not in mock_domains:
+            # Resolve real MX host to bypass local mailpit and send real email
+            mx_host = await _resolve_mx_host(domain)
+            if mx_host:
+                logger.info("mx_direct_delivery_selected", domain=domain, mx_host=mx_host)
+                provider = SmtpEmailProvider(host=mx_host, port=25, user="noreply@infervoyage.com")
+
+        if not provider:
+            provider = get_email_provider()
     
     subject = "Verify your InferVoyage Account"
     body_text = f"Your 6-digit verification code is: {code}\n\nThis code expires in 5 minutes."

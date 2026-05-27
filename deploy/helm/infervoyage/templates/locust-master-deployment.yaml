@@ -1,0 +1,56 @@
+{{- if .Values.locust.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "infervoyage.locust.fullname" . }}-master
+  labels:
+    {{- include "infervoyage.labels" . | nindent 4 }}
+    component: locust-master
+spec:
+  replicas: {{ .Values.locust.master.replicas }}
+  selector:
+    matchLabels:
+      {{- include "infervoyage.selectorLabels" . | nindent 6 }}
+      component: locust-master
+  template:
+    metadata:
+      labels:
+        {{- include "infervoyage.selectorLabels" . | nindent 8 }}
+        component: locust-master
+    spec:
+      containers:
+        - name: locust-master
+          image: "{{ .Values.locust.master.image }}"
+          imagePullPolicy: {{ .Values.locust.master.pullPolicy }}
+          args:
+            - --master
+            - --web-port=8089
+          ports:
+            - name: web
+              containerPort: 8089
+            - name: worker
+              containerPort: 5557
+          env:
+            - name: LOCUST_HOST
+              value: "http://{{ include "infervoyage.api.fullname" . }}:8000"
+            - name: TEST_USER_EMAIL
+              value: "loadtest@infervoyage.local"
+            - name: TEST_USER_PASSWORD
+              value: "LoadTest@12345"
+            - name: MODEL_NAME
+              value: {{ .Values.api.modelName | quote }}
+          resources:
+            {{- toYaml .Values.locust.master.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8089
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8089
+            initialDelaySeconds: 5
+            periodSeconds: 10
+{{- end }}

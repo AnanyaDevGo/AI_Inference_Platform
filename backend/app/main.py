@@ -46,6 +46,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("database_tables_ready")
 
+    # Validate Redis connectivity (critical dependency)
+    try:
+        from app.services.otp_service import get_redis_client
+        redis_client = await get_redis_client()
+        await redis_client.ping()
+        logger.info("redis_connected", url=settings.REDIS_URL)
+    except Exception as e:
+        logger.error("redis_connection_failed", url=settings.REDIS_URL, error=str(e))
+        raise e
+
     # Validate Ollama connectivity (non-fatal warning — Ollama may start later)
     if await check_ollama_health():
         logger.info("ollama_connected", url=settings.OLLAMA_BASE_URL)

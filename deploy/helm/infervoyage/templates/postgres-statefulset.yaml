@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "infervoyage.postgres.fullname" . }}
+  labels:
+    {{- include "infervoyage.labels" . | nindent 4 }}
+    component: postgres
+spec:
+  serviceName: {{ include "infervoyage.postgres.fullname" . }}
+  replicas: {{ .Values.postgres.replicas }}
+  selector:
+    matchLabels:
+      {{- include "infervoyage.selectorLabels" . | nindent 6 }}
+      component: postgres
+  template:
+    metadata:
+      labels:
+        {{- include "infervoyage.selectorLabels" . | nindent 8 }}
+        component: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: "{{ .Values.postgres.image }}"
+          imagePullPolicy: {{ .Values.postgres.pullPolicy }}
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "infervoyage.fullname" . }}-secrets
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "infervoyage.fullname" . }}-secrets
+                  key: postgres-password
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "infervoyage.fullname" . }}-secrets
+                  key: postgres-db
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          ports:
+            - name: postgres
+              containerPort: 5432
+          resources:
+            {{- toYaml .Values.postgres.resources | nindent 12 }}
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - $(POSTGRES_USER)
+                - -d
+                - $(POSTGRES_DB)
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - $(POSTGRES_USER)
+                - -d
+                - $(POSTGRES_DB)
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+
+        - name: postgres-exporter
+          image: prometheuscommunity/postgres-exporter:v0.15.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DATA_SOURCE_NAME
+              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@localhost:5432/$(POSTGRES_DB)?sslmode=disable"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "infervoyage.fullname" . }}-secrets
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "infervoyage.fullname" . }}-secrets
+                  key: postgres-password
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "infervoyage.fullname" . }}-secrets
+                  key: postgres-db
+          ports:
+            - name: metrics
+              containerPort: 9187
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: {{ include "infervoyage.postgres.fullname" . }}-pvc

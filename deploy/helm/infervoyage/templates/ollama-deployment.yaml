@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "infervoyage.ollama.fullname" . }}
+  labels:
+    {{- include "infervoyage.labels" . | nindent 4 }}
+    component: ollama
+spec:
+  replicas: {{ .Values.ollama.replicas }}
+  selector:
+    matchLabels:
+      {{- include "infervoyage.selectorLabels" . | nindent 6 }}
+      component: ollama
+  template:
+    metadata:
+      labels:
+        {{- include "infervoyage.selectorLabels" . | nindent 8 }}
+        component: ollama
+    spec:
+      {{- if .Values.ollama.gpu.enabled }}
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"
+      {{- end }}
+      containers:
+        - name: ollama
+          image: "{{ .Values.ollama.image }}"
+          imagePullPolicy: {{ .Values.ollama.pullPolicy }}
+          ports:
+            - name: api
+              containerPort: 11434
+          env:
+            - name: OLLAMA_HOST
+              value: "0.0.0.0"
+          resources:
+            requests:
+              cpu: {{ .Values.ollama.resources.requests.cpu | quote }}
+              memory: {{ .Values.ollama.resources.requests.memory | quote }}
+            limits:
+              cpu: {{ .Values.ollama.resources.limits.cpu | quote }}
+              memory: {{ .Values.ollama.resources.limits.memory | quote }}
+              {{- if .Values.ollama.gpu.enabled }}
+              nvidia.com/gpu: {{ index .Values.ollama.resources.limits "nvidia.com/gpu" | default "1" | quote }}
+              {{- end }}
+          volumeMounts:
+            - name: storage
+              mountPath: /root/.ollama
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 11434
+            initialDelaySeconds: 60
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /api/tags
+              port: 11434
+            initialDelaySeconds: 30
+            periodSeconds: 15
+
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: {{ include "infervoyage.ollama.fullname" . }}-pvc

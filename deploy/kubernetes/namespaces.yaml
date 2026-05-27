@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: infervoyage-dev
+  labels:
+    environment: dev
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: infervoyage-staging
+  labels:
+    environment: staging
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: infervoyage-prod
+  labels:
+    environment: prod

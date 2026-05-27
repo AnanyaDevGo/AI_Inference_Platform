@@ -1,0 +1,80 @@
+global:
+  environment: prod
+
+ingress:
+  hostname: "infervoyage.com"
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/limit-rps: "50"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "3"
+  tls:
+    enabled: true
+    secretName: "prod-infervoyage-tls"
+
+api:
+  replicas: 4
+  secretKey: "prod-production-secret-key-must-be-very-long-and-random-32-bytes"
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: "2.0"
+      memory: 1Gi
+  autoscaling:
+    minReplicas: 4
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+
+frontend:
+  replicas: 3
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+ollama:
+  replicas: 2
+  storageClass: "premium-rwo" # Cloud SSD
+  storageSize: "50Gi"
+  gpu:
+    enabled: true # Enable GPU limits and scheduling
+  resources:
+    requests:
+      cpu: "2.0"
+      memory: 8Gi
+    limits:
+      cpu: "8.0"
+      memory: 16Gi
+      "nvidia.com/gpu": "1" # Require 1 GPU per pod
+  autoscaling:
+    minReplicas: 2
+    maxReplicas: 6
+
+postgres:
+  storageClass: "premium-rwo" # Cloud SSD
+  storageSize: "100Gi"
+  resources:
+    requests:
+      cpu: "1.0"
+      memory: 2Gi
+    limits:
+      cpu: "4.0"
+      memory: 4Gi
+
+redis:
+  maxmemory: "1gb"
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: "1.0"
+      memory: 1Gi
+
+# Disable Locust by default in production cluster for security/safety
+locust:
+  enabled: false

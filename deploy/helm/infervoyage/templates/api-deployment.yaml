@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "infervoyage.api.fullname" . }}
+  labels:
+    {{- include "infervoyage.labels" . | nindent 4 }}
+    component: api
+spec:
+  replicas: {{ .Values.api.replicas }}
+  selector:
+    matchLabels:
+      {{- include "infervoyage.selectorLabels" . | nindent 6 }}
+      component: api
+  template:
+    metadata:
+      labels:
+        {{- include "infervoyage.selectorLabels" . | nindent 8 }}
+        component: api
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: api
+          image: "{{ .Values.api.image }}"
+          imagePullPolicy: {{ .Values.api.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: APP_NAME
+              value: {{ .Values.appName | quote }}
+            - name: APP_VERSION
+              value: {{ .Values.appVersion | quote }}
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "infervoyage.fullname" . }}-secrets
+                  key: api-secret-key
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "infervoyage.fullname" . }}-secrets
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "infervoyage.fullname" . }}-secrets
+                  key: postgres-password
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "infervoyage.fullname" . }}-secrets
+                  key: postgres-db
+            - name: DATABASE_URL
+              value: "postgresql+asyncpg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@{{ include "infervoyage.postgres.fullname" . }}:5432/$(POSTGRES_DB)"
+            - name: REDIS_URL
+              value: "redis://{{ include "infervoyage.redis.fullname" . }}:6379/0"
+            - name: OLLAMA_BASE_URL
+              value: "http://{{ include "infervoyage.ollama.fullname" . }}:11434"
+            - name: MAIL_SERVER
+              value: {{ .Values.api.mail.server | quote }}
+            - name: MAIL_PORT
+              value: {{ .Values.api.mail.port | quote }}
+            - name: MAIL_FROM
+              value: {{ .Values.api.mail.from | quote }}
+            - name: MODEL_NAME
+              value: {{ .Values.api.modelName | quote }}
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5

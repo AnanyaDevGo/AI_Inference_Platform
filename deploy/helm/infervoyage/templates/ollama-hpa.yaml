@@ -1,0 +1,23 @@
+{{- if .Values.ollama.autoscaling.enabled -}}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "infervoyage.ollama.fullname" . }}
+  labels:
+    {{- include "infervoyage.labels" . | nindent 4 }}
+    component: ollama
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "infervoyage.ollama.fullname" . }}
+  minReplicas: {{ .Values.ollama.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.ollama.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.ollama.autoscaling.targetCPUUtilizationPercentage }}
+{{- end }}

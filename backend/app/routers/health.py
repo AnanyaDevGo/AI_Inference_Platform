@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import time
 import structlog
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -72,4 +73,68 @@ async def readiness(db: AsyncSession = Depends(get_db)) -> JSONResponse:
                 **checks,
             },
         },
+    )
+
+
+@router.get("/health/diagnostics", summary="API connectivity diagnostics")
+async def diagnostics(request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
+    """
+    Detailed check of API headers, database query latency, Redis ping latency, 
+    Ollama response latency, and CORS origin settings for troubleshooting.
+    """
+    settings = get_settings()
+    
+    # 1. Collect request headers to verify proxy headers (e.g. X-Forwarded-For)
+    req_headers = {k: v for k, v in request.headers.items() if k.lower() in [
+        "host", "origin", "referer", "x-forwarded-for", "x-forwarded-proto", "x-forwarded-host", "user-agent"
+    ]}
+
+    # 2. Database latency check
+    db_latency_ms = None
+    try:
+        t0 = time.perf_counter()
+        await db.execute(text("SELECT 1"))
+        db_latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+    except Exception as e:
+        logger.error("diagnostics_db_ping_failed", error=str(e))
+
+    # 3. Redis latency check
+    redis_latency_ms = None
+    try:
+        t0 = time.perf_counter()
+        redis_client = await _get_redis()
+        await redis_client.ping()
+        redis_latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+    except Exception as e:
+        logger.error("diagnostics_redis_ping_failed", error=str(e))
+
+    # 4. Ollama latency check
+    ollama_latency_ms = None
+    ollama_ok = False
+    try:
+        t0 = time.perf_counter()
+        ollama_ok = await check_ollama_health()
+        ollama_latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+    except Exception as e:
+        logger.error("diagnostics_ollama_ping_failed", error=str(e))
+
+    return JSONResponse(
+        status_code=200,
+        content={
+            "success": True,
+            "diagnostics": {
+                "app_name": settings.APP_NAME,
+                "app_version": settings.APP_VERSION,
+                "debug_mode": settings.DEBUG,
+                "allowed_cors_origins": settings.ALLOWED_ORIGINS,
+                "cookie_secure": settings.COOKIE_SECURE,
+                "cookie_samesite": settings.COOKIE_SAMESITE,
+                "request_headers": req_headers,
+                "services": {
+                    "database": {"status": "reachable" if db_latency_ms is not None else "unreachable", "latency_ms": db_latency_ms},
+                    "redis": {"status": "reachable" if redis_latency_ms is not None else "unreachable", "latency_ms": redis_latency_ms},
+                    "ollama": {"status": "reachable" if ollama_ok else "unreachable", "latency_ms": ollama_latency_ms},
+                }
+            }
+        }
     )

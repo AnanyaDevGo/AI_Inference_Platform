@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "infervoyage.ollama.fullname" . }}
+  labels:
+    {{- include "infervoyage.labels" . | nindent 4 }}
+    component: ollama
+spec:
+  ports:
+    - name: api
+      port: 11434
+      targetPort: api
+  selector:
+    {{- include "infervoyage.selectorLabels" . | nindent 4 }}
+    component: ollama
+  type: ClusterIP

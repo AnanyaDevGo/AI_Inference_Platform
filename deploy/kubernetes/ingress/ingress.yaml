@@ -1,0 +1,47 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: infervoyage-ingress
+  namespace: infervoyage-dev
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    # Enable Nginx-level rate limiting (max 10 requests per second from a single IP)
+    nginx.ingress.kubernetes.io/limit-rps: "10"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "2"
+    # Enable CORS
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    # SSL/TLS Redirect
+    nginx.ingress.kubernetes.io/ssl-redirect: "false" # Set true in production with certs
+spec:
+  # TLS configurations (uncomment and replace secretName with Cert-Manager's cert once issued)
+  # tls:
+  #   - hosts:
+  #       - infervoyage.local
+  #     secretName: infervoyage-tls-cert
+  rules:
+    - host: infervoyage.local
+      http:
+        paths:
+          # API Backend endpoints
+          - path: /v1
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 8000
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 8000
+          # Frontend endpoints
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
