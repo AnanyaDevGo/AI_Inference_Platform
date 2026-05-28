@@ -1,11 +1,11 @@
-localhost, 127.0.0.1 {
+:80 {
     log {
         output stdout
     }
 
     # Serve static frontend files
     root * /srv
-    
+
     route {
         reverse_proxy /api/* http://api:8000
         reverse_proxy /admin/* http://api:8000
