@@ -45,7 +45,7 @@ from app.services.otp_service import (
 )
 from app.services.email_service import send_otp_verification_email
 from app.dependencies.auth import get_current_user, CurrentUser
-from app.utils.errors import ValidationError, UnauthorizedError
+from app.utils.errors import ValidationError, UnauthorizedError, InvalidCredentialsError
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
