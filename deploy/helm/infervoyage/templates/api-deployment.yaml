@@ -72,7 +72,7 @@ spec:
             {{- toYaml .Values.api.resources | nindent 12 }}
           livenessProbe:
             httpGet:
-              path: /health
+              path: /health/liveness
               port: 8000
             initialDelaySeconds: 30
             periodSeconds: 15

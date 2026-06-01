@@ -71,6 +71,7 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
 
+        {{- if .Values.observability.prometheusOperator.enabled }}
         - name: postgres-exporter
           image: prometheuscommunity/postgres-exporter:v0.15.0
           imagePullPolicy: IfNotPresent
@@ -105,6 +106,7 @@ spec:
           securityContext:
             runAsNonRoot: true
             runAsUser: 65534
+        {{- end }}
 
       volumes:
         - name: postgres-data

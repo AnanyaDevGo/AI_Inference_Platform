@@ -47,6 +47,7 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 10
 
+        {{- if .Values.observability.prometheusOperator.enabled }}
         - name: redis-exporter
           image: oliver006/redis_exporter:v1.58.0
           imagePullPolicy: IfNotPresent
@@ -63,6 +64,7 @@ spec:
             limits:
               cpu: 200m
               memory: 128Mi
+        {{- end }}
 
       volumes:
         - name: config
