@@ -6,6 +6,17 @@ import { apiGet, apiStreamPost, apiPatch, apiDelete } from '../api/client'
 import Sidebar from '../components/Sidebar'
 import { useThemeStore } from '../stores/themeStore'
 
+function formatModelDisplayName(modelName: string): string {
+  if (!modelName) return 'Assistant'
+  const base = modelName.split(':')[0].toLowerCase()
+  if (base.includes('gemma2') || base.includes('gemma 2')) return 'Gemma 2'
+  if (base.includes('gemma')) return 'Gemma'
+  if (base.includes('llama3.2') || base.includes('llama 3.2')) return 'Llama 3.2'
+  if (base.includes('llama3') || base.includes('llama 3')) return 'Llama 3'
+  if (base.includes('llama')) return 'Llama'
+  return base.split(/[-_]/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+}
+
 function parseTextFormatting(text: string) {
   if (!text) return text
   const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
@@ -447,7 +458,7 @@ export default function ChatPage() {
             <div className="welcome-msg">
               <div className="welcome-icon">✦</div>
               <h2>What can I help you with?</h2>
-              <p>Start a conversation with Gemma 2 — ask questions, brainstorm ideas, or get help with code.</p>
+              <p>Start a conversation with {formatModelDisplayName(selectedModel)} — ask questions, brainstorm ideas, or get help with code.</p>
               <div className="welcome-suggestions">
                 {[
                   'Explain quantum computing simply',
@@ -473,7 +484,7 @@ export default function ChatPage() {
               </div>
               <div className="message-content">
                 <div className="message-role" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>{msg.role === 'user' ? 'You' : 'Gemma 2'}</span>
+                  <span>{msg.role === 'user' ? 'You' : formatModelDisplayName(selectedModel)}</span>
                   {!streaming && msg.role === 'user' && editingIndex !== i && (
                     <button
                       type="button"
