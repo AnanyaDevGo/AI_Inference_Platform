@@ -101,7 +101,6 @@ async def chat_completions(
         )
 
     result = await inference_service.complete(request, org_id=org_id)
-
     # Log usage for non-streaming requests
     request_id = response.headers.get("X-Request-ID", str(uuid.uuid4()))
     await log_usage(
@@ -116,5 +115,15 @@ async def chat_completions(
         duration_ms=0,
         status="success",
     )
-
     return result
+
+
+@router.get("/models")
+async def list_models(
+    current_user: CurrentUser = Depends(get_current_user_or_api_key),
+):
+    """
+    List available models from Ollama.
+    """
+    models = await inference_service.list_ollama_models()
+    return {"models": [m.get("name") for m in models]}

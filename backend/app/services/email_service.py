@@ -255,12 +255,22 @@ async def send_otp_verification_email(email: str, code: str) -> None:
     </div>
     """
     
-    await provider.send_email(
-        to_email=email,
-        subject=subject,
-        body_text=body_text,
-        body_html=body_html,
-    )
+    try:
+        await provider.send_email(
+            to_email=email,
+            subject=subject,
+            body_text=body_text,
+            body_html=body_html,
+        )
+    except Exception as e:
+        logger.error("email_delivery_failed_falling_back_to_console", error=str(e), email=email, code=code)
+        fallback_provider = ConsoleEmailProvider()
+        await fallback_provider.send_email(
+            to_email=email,
+            subject=subject,
+            body_text=body_text,
+            body_html=body_html,
+        )
 
 
 async def send_password_reset_email(email: str, code: str) -> None:
@@ -310,9 +320,19 @@ async def send_password_reset_email(email: str, code: str) -> None:
     </div>
     """
     
-    await provider.send_email(
-        to_email=email,
-        subject=subject,
-        body_text=body_text,
-        body_html=body_html,
-    )
+    try:
+        await provider.send_email(
+            to_email=email,
+            subject=subject,
+            body_text=body_text,
+            body_html=body_html,
+        )
+    except Exception as e:
+        logger.error("password_reset_email_delivery_failed_falling_back_to_console", error=str(e), email=email, code=code)
+        fallback_provider = ConsoleEmailProvider()
+        await fallback_provider.send_email(
+            to_email=email,
+            subject=subject,
+            body_text=body_text,
+            body_html=body_html,
+        )

@@ -29,6 +29,55 @@ configure_logging()
 logger = structlog.get_logger(__name__)
 
 
+async def pull_default_models():
+    import asyncio
+    from app.config import get_settings
+    from app.services.inference_service import check_ollama_health, _get_client
+    
+    settings = get_settings()
+    logger.info("checking_ollama_ready_to_pull_models")
+    # Wait for Ollama up to 60s
+    for i in range(12):
+        if await check_ollama_health():
+            break
+        await asyncio.sleep(5)
+    else:
+        logger.error("ollama_unreachable_during_model_pull")
+        return
+
+    models_to_pull = ["gemma2:2b", "llama3.2"]
+    async with _get_client() as client:
+        try:
+            resp = await client.get("/api/tags", timeout=5.0)
+            existing_names = []
+            if resp.status_code == 200:
+                existing_names = [m.get("name") for m in resp.json().get("models", [])]
+        except Exception as e:
+            logger.warning("failed_to_fetch_existing_models", error=str(e))
+            existing_names = []
+
+        for m_name in models_to_pull:
+            match_found = False
+            for existing in existing_names:
+                if existing.startswith(m_name) or m_name in existing:
+                    match_found = True
+                    break
+
+            if match_found:
+                logger.info("model_already_exists", model=m_name)
+                continue
+
+            logger.info("pulling_model_started", model=m_name)
+            try:
+                pull_resp = await client.post("/api/pull", json={"name": m_name, "stream": False}, timeout=600.0)
+                if pull_resp.status_code == 200:
+                    logger.info("pulling_model_success", model=m_name)
+                else:
+                    logger.error("pulling_model_failed", model=m_name, status=pull_resp.status_code, body=pull_resp.text)
+            except Exception as e:
+                logger.exception("pulling_model_failed_exception", model=m_name, error=str(e))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Startup and shutdown lifecycle."""
@@ -94,6 +143,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             url=settings.OLLAMA_BASE_URL,
             note="Inference requests will fail until Ollama is reachable",
         )
+
+    import asyncio
+    asyncio.create_task(pull_default_models())
 
     yield
 

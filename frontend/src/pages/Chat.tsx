@@ -2,11 +2,9 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { useChatStore } from '../stores/chatStore'
-import { apiStreamPost, apiPatch, apiDelete } from '../api/client'
+import { apiGet, apiStreamPost, apiPatch, apiDelete } from '../api/client'
 import Sidebar from '../components/Sidebar'
 import { useThemeStore } from '../stores/themeStore'
-
-const MODEL = 'gemma2:2b-instruct-q4_K_M'
 
 function parseTextFormatting(text: string) {
   if (!text) return text
@@ -138,6 +136,25 @@ export default function ChatPage() {
   const logout = useAuthStore((s) => s.logout)
   const navigate = useNavigate()
 
+  const [selectedModel, setSelectedModel] = useState(() => localStorage.getItem('selectedModel') || 'gemma2:2b')
+  const [availableModels, setAvailableModels] = useState<string[]>(['gemma2:2b', 'llama3.2'])
+
+  useEffect(() => {
+    if (!token) return
+    const loadModels = async () => {
+      try {
+        const data = await apiGet<{ models: string[] }>('/v1/models', token)
+        if (data && data.models) {
+          const merged = Array.from(new Set(['gemma2:2b', 'llama3.2', ...data.models]))
+          setAvailableModels(merged)
+        }
+      } catch (err) {
+        console.warn('Failed to load models list from backend:', err)
+      }
+    }
+    loadModels()
+  }, [token])
+
   const activeId = useChatStore((s) => s.activeId)
   const getActive = useChatStore((s) => s.getActive)
   const createConversation = useChatStore((s) => s.createConversation)
@@ -220,7 +237,7 @@ export default function ChatPage() {
       await apiStreamPost(
         '/v1/chat/completions',
         {
-          model: MODEL,
+          model: selectedModel,
           messages: allMessages,
           stream: true,
           max_tokens: 1024,
@@ -353,7 +370,34 @@ export default function ChatPage() {
               <div className="logo-icon">⚡</div>
               <span className="logo-text">InferVoyage</span>
             </div>
-            <span className="model-badge">{MODEL.split(':')[0]}</span>
+            <select
+              value={selectedModel}
+              onChange={(e) => {
+                const val = e.target.value
+                setSelectedModel(val)
+                localStorage.setItem('selectedModel', val)
+              }}
+              style={{
+                marginLeft: '16px',
+                background: 'var(--bg-input)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border)',
+                borderRadius: '6px',
+                padding: '4px 8px',
+                fontSize: '0.85rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                outline: 'none',
+                transition: 'border-color var(--transition)',
+              }}
+              className="model-select"
+            >
+              {availableModels.map((m) => (
+                <option key={m} value={m} style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+                  {m}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="header-right">
             <button
@@ -600,7 +644,7 @@ export default function ChatPage() {
               </svg>
             </button>
           </div>
-          <div className="input-hint">Enter to send · Shift+Enter for new line · Model: {MODEL}</div>
+          <div className="input-hint">Enter to send · Shift+Enter for new line · Model: {selectedModel}</div>
         </div>
       </div>
     </div>
