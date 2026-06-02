@@ -189,8 +189,9 @@ export default function ChatPage() {
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.nativeEvent.isComposing) return
+    if ((e.key === 'Enter' || e.keyCode === 13) && !e.shiftKey) {
       e.preventDefault()
       sendMessage()
     }

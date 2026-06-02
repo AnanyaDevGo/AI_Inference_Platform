@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_TTL_SECONDS: int = 604800   # 7 days
     GOOGLE_CLIENT_ID: str | None = None
 
+    # ── Super Admin ────────────────────────────────────────────────
+    SUPER_ADMIN_EMAIL: str = "admin@platform.com"
+    SUPER_ADMIN_PASSWORD: str = "password123"
+
     # ── Email / SMTP ───────────────────────────────────────────────
     SMTP_HOST: str | None = None
     SMTP_PORT: int | None = None

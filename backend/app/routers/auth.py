@@ -172,8 +172,7 @@ async def register(
         else:
             org = await get_or_create_default_org(db)
 
-        total = await count_users(db)
-        role = "platform_admin" if total == 0 else ("org_admin" if is_new else "viewer")
+        role = "org_admin" if is_new else "viewer"
 
         user = User(
             org_id=org.id,
@@ -183,27 +182,32 @@ async def register(
             role=role,
             auth_provider="local",
             is_active=True,
-            is_verified=True,
+            is_verified=False,
             password_set=True,
-            last_login_at=datetime.now(timezone.utc),
         )
         db.add(user)
         await db.flush()
         await db.refresh(user)
 
-        # Issue Tokens
-        access_token = create_access_token(user)
-        refresh_token, jti = create_refresh_token(user)
-        await store_active_refresh_token(str(user.id), jti, 604800)
-        set_refresh_cookie(response, refresh_token)
-
-        logger.info("user_registration_success", email=req.email, role=role, org=org.slug)
+        code = await store_otp(email=req.email, name=req.name)
+        
+        from app.services.auth_service import create_verification_token
+        token_payload = {
+            "email": req.email,
+            "name": req.name,
+            "purpose": "local_registration"
+        }
+        verification_token = create_verification_token(token_payload)
+        
+        await send_otp_verification_email(req.email, code)
+        logger.info("user_registration_initiated_otp_dispatched", email=req.email, role=role, org=org.slug)
 
         return TokenResponse(
-            access_token=access_token,
+            access_token="",
             user_name=user.name,
             user_email=user.email,
-            requires_otp=False,
+            requires_otp=True,
+            verification_token=verification_token,
         )
     except ValidationError as e:
         logger.warning("user_registration_failed_validation", email=req.email, error=e.message)
@@ -329,8 +333,7 @@ async def google_auth(
     else:
         org = await get_or_create_default_org(db)
 
-    total = await count_users(db)
-    role = "platform_admin" if total == 0 else ("org_admin" if is_new else "viewer")
+    role = "org_admin" if is_new else "viewer"
 
     user = User(
         org_id=org.id,
@@ -406,27 +409,26 @@ async def verify_otp_endpoint(
     if not user:
         raise ValidationError("User not found.")
 
-    payload = None
+    if not req.code:
+        raise ValidationError("Verification code is required.")
+    try:
+        otp_payload = await verify_otp(req.email, req.code)
+    except ValueError as e:
+        raise ValidationError(str(e))
+        
+    if not otp_payload:
+        raise ValidationError("Invalid or expired verification code.")
+
     if req.verification_token:
         from app.services.auth_service import decode_token
         try:
             payload = decode_token(req.verification_token)
-            if payload.get("purpose") != "google_registration":
+            if payload.get("purpose") not in ("google_registration", "local_registration"):
                 raise ValidationError("Invalid verification token purpose")
             if payload.get("email") != req.email:
                 raise ValidationError("Verification token email mismatch")
         except Exception as e:
             raise ValidationError(f"Invalid or expired verification token: {str(e)}")
-    else:
-        if not req.code:
-            raise ValidationError("Verification code or token is required.")
-        try:
-            payload = await verify_otp(req.email, req.code)
-        except ValueError as e:
-            raise ValidationError(str(e))
-            
-        if not payload:
-            raise ValidationError("Invalid or expired verification code.")
 
     # Mark user as verified
     user.is_verified = True
@@ -571,33 +573,8 @@ async def forgot_password(
     if should_send:
         code = await store_password_reset_otp(req.email)
         
-        # Send the code using pluggable provider registry
-        from app.services.email_service import get_email_provider
-        provider = get_email_provider()
-        
-        subject = "Reset your InferVoyage Password"
-        body_text = f"Your 6-digit password reset verification code is: {code}\n\nThis code expires in 5 minutes."
-        body_html = f"""
-        <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-            <h2 style="color: #4f46e5; text-align: center;">InferVoyage</h2>
-            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-            <p>Hello,</p>
-            <p>We received a request to reset your password. Please enter the following 6-digit verification code to proceed:</p>
-            <div style="text-align: center; margin: 30px 0;">
-                <span style="font-size: 2.2rem; font-weight: 700; letter-spacing: 8px; background-color: #f3f4f6; padding: 12px 24px; border-radius: 6px; color: #1f2937; border: 1px solid #e5e7eb;">
-                    {code}
-                </span>
-            </div>
-            <p style="color: #6b7280; font-size: 0.875rem;">This code is valid for <strong>5 minutes</strong>. If you did not request a password reset, you can safely ignore this email.</p>
-        </div>
-        """
-        
-        await provider.send_email(
-            to_email=req.email,
-            subject=subject,
-            body_text=body_text,
-            body_html=body_html,
-        )
+        from app.services.email_service import send_password_reset_email
+        await send_password_reset_email(req.email, code)
         logger.info("forgot_password_otp_dispatched", email=req.email)
 
     # Always generate a valid-looking reset token to prevent enumeration response delta

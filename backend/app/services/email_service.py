@@ -261,3 +261,58 @@ async def send_otp_verification_email(email: str, code: str) -> None:
         body_text=body_text,
         body_html=body_html,
     )
+
+
+async def send_password_reset_email(email: str, code: str) -> None:
+    """Send the 6-digit password reset verification code using configured provider or direct MX delivery fallback."""
+    from app.config import get_settings
+    settings = get_settings()
+    domain = email.split("@")[-1].lower() if "@" in email else ""
+    provider = None
+
+    # 1. If a real provider is explicitly configured (Resend or external SMTP), use it directly
+    use_real_provider = False
+    if settings.RESEND_API_KEY:
+        use_real_provider = True
+    elif settings.SMTP_HOST and settings.SMTP_HOST != "mailpit":
+        use_real_provider = True
+
+    if use_real_provider:
+        provider = get_email_provider()
+    else:
+        # Fallback logic for local development
+        mock_domains = {"example.com", "test.com", "infervoyage.local", "localhost"}
+        if domain and domain not in mock_domains:
+            # Resolve real MX host to bypass local mailpit and send real email
+            mx_host = await _resolve_mx_host(domain)
+            if mx_host:
+                logger.info("mx_direct_delivery_selected", domain=domain, mx_host=mx_host)
+                provider = SmtpEmailProvider(host=mx_host, port=25, user="noreply@infervoyage.com")
+
+        if not provider:
+            provider = get_email_provider()
+    
+    subject = "Reset your InferVoyage Password"
+    body_text = f"Your 6-digit password reset verification code is: {code}\n\nThis code expires in 5 minutes."
+    
+    body_html = f"""
+    <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <h2 style="color: #4f46e5; text-align: center;">InferVoyage</h2>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+        <p>Hello,</p>
+        <p>We received a request to reset your password. Please enter the following 6-digit verification code to proceed:</p>
+        <div style="text-align: center; margin: 30px 0;">
+            <span style="font-size: 2.2rem; font-weight: 700; letter-spacing: 8px; background-color: #f3f4f6; padding: 12px 24px; border-radius: 6px; color: #1f2937; border: 1px solid #e5e7eb;">
+                {code}
+            </span>
+        </div>
+        <p style="color: #6b7280; font-size: 0.875rem;">This code is valid for <strong>5 minutes</strong>. If you did not request a password reset, you can safely ignore this email.</p>
+    </div>
+    """
+    
+    await provider.send_email(
+        to_email=email,
+        subject=subject,
+        body_text=body_text,
+        body_html=body_html,
+    )

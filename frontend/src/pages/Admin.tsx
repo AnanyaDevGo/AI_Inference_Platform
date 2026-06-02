@@ -93,7 +93,7 @@ export default function AdminPage() {
         {tab === 'orgs' && isPlatformAdmin && <OrgsTab token={token} />}
         {tab === 'users' && <UsersTab token={token} isPlatformAdmin={isPlatformAdmin} />}
         {tab === 'keys' && <KeysTab token={token} />}
-        {tab === 'usage' && <UsageTab token={token} />}
+        {tab === 'usage' && <UsageTab token={token} isPlatformAdmin={isPlatformAdmin} />}
       </div>
     </div>
   )
@@ -106,6 +106,8 @@ function OrgsTab({ token }: { token: string | null }) {
   const [showCreate, setShowCreate] = useState(false)
   const [form, setForm] = useState({ name: '', slug: '', rate_limit_rpm: 60, rate_limit_burst: 10 })
   const [error, setError] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingForm, setEditingForm] = useState({ rate_limit_rpm: 60, rate_limit_burst: 10 })
 
   const load = useCallback(async () => {
     if (!token) return
@@ -132,6 +134,19 @@ function OrgsTab({ token }: { token: string | null }) {
       await apiPatch(`/admin/orgs/${id}`, data as Record<string, unknown>, token)
       load()
     } catch { /* */ }
+  }
+
+  const handleStartEdit = (o: Org) => {
+    setEditingId(o.id)
+    setEditingForm({ rate_limit_rpm: o.rate_limit_rpm, rate_limit_burst: o.rate_limit_burst })
+  }
+
+  const handleSaveEdit = async (id: string) => {
+    await updateOrg(id, {
+      rate_limit_rpm: editingForm.rate_limit_rpm,
+      rate_limit_burst: editingForm.rate_limit_burst
+    })
+    setEditingId(null)
   }
 
   const deleteOrg = async (id: string) => {
@@ -176,25 +191,56 @@ function OrgsTab({ token }: { token: string | null }) {
           <tr><th>Name</th><th>Slug</th><th>RPM</th><th>Burst</th><th>Active</th><th>Actions</th></tr>
         </thead>
         <tbody>
-          {orgs.map(o => (
-            <tr key={o.id}>
-              <td>{o.name}</td>
-              <td><code>{o.slug}</code></td>
-              <td>{o.rate_limit_rpm}</td>
-              <td>{o.rate_limit_burst}</td>
-              <td><span className={`status-dot ${o.is_active ? 'active' : 'inactive'}`} /></td>
-              <td>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button className="btn-sm" onClick={() => updateOrg(o.id, { is_active: !o.is_active })}>
-                    {o.is_active ? 'Disable' : 'Enable'}
-                  </button>
-                  <button className="btn-sm btn-danger" onClick={() => deleteOrg(o.id)}>
-                    Delete
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
+          {orgs.map(o => {
+            const isEditing = editingId === o.id
+            return (
+              <tr key={o.id}>
+                <td>{o.name}</td>
+                <td><code>{o.slug}</code></td>
+                <td>
+                  {isEditing ? (
+                    <input 
+                      type="number" 
+                      style={{ width: '80px', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--border)' }} 
+                      value={editingForm.rate_limit_rpm} 
+                      onChange={e => setEditingForm({ ...editingForm, rate_limit_rpm: +e.target.value })} 
+                    />
+                  ) : o.rate_limit_rpm}
+                </td>
+                <td>
+                  {isEditing ? (
+                    <input 
+                      type="number" 
+                      style={{ width: '80px', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--border)' }} 
+                      value={editingForm.rate_limit_burst} 
+                      onChange={e => setEditingForm({ ...editingForm, rate_limit_burst: +e.target.value })} 
+                    />
+                  ) : o.rate_limit_burst}
+                </td>
+                <td><span className={`status-dot ${o.is_active ? 'active' : 'inactive'}`} /></td>
+                <td>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {isEditing ? (
+                      <>
+                        <button className="btn-sm" onClick={() => handleSaveEdit(o.id)}>Save</button>
+                        <button className="btn-sm btn-danger" onClick={() => setEditingId(null)}>Cancel</button>
+                      </>
+                    ) : (
+                      <>
+                        <button className="btn-sm" onClick={() => handleStartEdit(o)}>Edit Limits</button>
+                        <button className="btn-sm" onClick={() => updateOrg(o.id, { is_active: !o.is_active })}>
+                          {o.is_active ? 'Disable' : 'Enable'}
+                        </button>
+                        <button className="btn-sm btn-danger" onClick={() => deleteOrg(o.id)}>
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>
@@ -456,22 +502,35 @@ interface DailyUsageItem {
   tokens: number
 }
 
-function UsageTab({ token }: { token: string | null }) {
+function UsageTab({ token, isPlatformAdmin }: { token: string | null; isPlatformAdmin: boolean }) {
   const [summary, setSummary] = useState<UsageSummary | null>(null)
   const [daily, setDaily] = useState<DailyUsageItem[]>([])
   const [chartMetric, setChartMetric] = useState<'requests' | 'tokens'>('requests')
   const [hoveredPoint, setHoveredPoint] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [orgs, setOrgs] = useState<Org[]>([])
+  const [selectedOrgId, setSelectedOrgId] = useState<string>('')
+
+  const loadOrgs = useCallback(async () => {
+    if (!token || !isPlatformAdmin) return
+    try {
+      const data = await apiGet<Org[]>('/admin/orgs', token)
+      setOrgs(data)
+    } catch { /* */ }
+  }, [token, isPlatformAdmin])
+
+  useEffect(() => { loadOrgs() }, [loadOrgs])
 
   const load = useCallback(async () => {
     if (!token) return
     setLoading(true)
     setError(null)
     try {
+      const query = selectedOrgId ? `?org_id=${selectedOrgId}` : ''
       const [sumData, dailyData] = await Promise.all([
-        apiGet<UsageSummary>('/admin/usage/summary', token),
-        apiGet<DailyUsageItem[]>('/admin/usage/daily', token),
+        apiGet<UsageSummary>(`/admin/usage/summary${query}`, token),
+        apiGet<DailyUsageItem[]>(`/admin/usage/daily${query}`, token),
       ])
       setSummary(sumData)
       setDaily(dailyData)
@@ -480,7 +539,7 @@ function UsageTab({ token }: { token: string | null }) {
     } finally {
       setLoading(false)
     }
-  }, [token])
+  }, [token, selectedOrgId])
 
   useEffect(() => { load() }, [load])
 
@@ -524,9 +583,26 @@ function UsageTab({ token }: { token: string | null }) {
 
   return (
     <div className="admin-section" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div className="section-header">
+      <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <h2>Usage Summary</h2>
-        <button className="btn-primary-sm" onClick={load} title="Refresh data" style={{ minWidth: '90px' }}>&#8634; Refresh</button>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          {isPlatformAdmin && orgs.length > 0 && (
+            <select
+              value={selectedOrgId}
+              onChange={(e) => setSelectedOrgId(e.target.value)}
+              className="role-select"
+              style={{ padding: '6px 12px', minWidth: '180px' }}
+            >
+              <option value="">All Organizations</option>
+              {orgs.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          )}
+          <button className="btn-primary-sm" onClick={load} title="Refresh data" style={{ minWidth: '90px' }}>&#8634; Refresh</button>
+        </div>
       </div>
 
       <div className="usage-stats-grid">

@@ -135,13 +135,49 @@ export default function RegisterPage() {
       if (orgName.trim()) {
         body.org_name = orgName.trim()
       }
-      const data = await apiPost<AuthResponse>('/auth/register', body)
-      setAuth(data.access_token, data.user_name, data.user_email)
-      navigate('/chat')
+      const data = await apiPost<{ access_token: string; user_name: string; user_email: string; requires_otp: boolean; verification_token?: string }>('/auth/register', body)
+      if (data.requires_otp) {
+        setVerificationToken(data.verification_token || null)
+        setOtpSent(true)
+      } else {
+        setAuth(data.access_token, data.user_name, data.user_email)
+        navigate('/chat')
+      }
     } catch (err: any) {
       setError(err.message || 'Registration failed')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleLocalOtpVerify = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    if (!otpCode || otpCode.length !== 6) return setError('Please enter a 6-digit code')
+
+    setLoading(true)
+    try {
+      const payload: Record<string, any> = { email, code: otpCode }
+      if (verificationToken) {
+        payload.verification_token = verificationToken
+      }
+      const data = await apiPost<AuthResponse>('/auth/verify-otp', payload)
+      setAuth(data.access_token, data.user_name, data.user_email)
+      navigate('/chat')
+    } catch (err: any) {
+      setError(err.message || 'Invalid or expired verification code')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleLocalResendOtp = async () => {
+    setError('')
+    try {
+      await apiPost('/auth/send-otp', { email })
+      alert('Verification code resent successfully!')
+    } catch (err: any) {
+      setError(err.message || 'Resend failed')
     }
   }
 
@@ -178,12 +214,10 @@ export default function RegisterPage() {
     e.preventDefault()
     setGoogleError('')
 
-    const payload: Record<string, any> = { email: googleEmail }
+    if (!otpCode || otpCode.length !== 6) return setGoogleError('Please enter a 6-digit code')
+    const payload: Record<string, any> = { email: googleEmail, code: otpCode }
     if (verificationToken) {
       payload.verification_token = verificationToken
-    } else {
-      if (!otpCode || otpCode.length !== 6) return setGoogleError('Please enter a 6-digit code')
-      payload.code = otpCode
     }
 
     setGoogleLoading(true)
@@ -278,84 +312,122 @@ export default function RegisterPage() {
         </button>
       </div>
       <div className="auth-card">
-        <h1>Create Account</h1>
-        <p className="subtitle">Get started with InferVoyage</p>
+        <h1>{otpSent ? 'Verify Email' : 'Create Account'}</h1>
+        <p className="subtitle">
+          {otpSent ? `We've sent a 6-digit OTP verification code to ${email}` : 'Get started with InferVoyage'}
+        </p>
 
         {error && <div className="error-msg">{error}</div>}
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="name">Full Name</label>
-            <input
-              id="name"
-              name="name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="John Doe"
-              autoComplete="name"
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              autoComplete="email"
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="orgName">Organization</label>
-            <input
-              id="orgName"
-              name="orgName"
-              type="text"
-              value={orgName}
-              onChange={(e) => setOrgName(e.target.value)}
-              placeholder="Your company or team name (optional)"
-              autoComplete="organization"
-            />
-            <span className="form-hint">Leave blank to join the Default organization</span>
-          </div>
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+        {otpSent ? (
+          <form onSubmit={handleLocalOtpVerify}>
+            <div className="form-group">
+              <label htmlFor="localOtpInput">6-Digit Verification Code</label>
               <input
-                id="password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Min. 8 characters"
-                autoComplete="new-password"
-                style={{ width: '100%', paddingRight: '40px' }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
+                id="localOtpInput"
+                name="otpCode"
+                type="text"
+                maxLength={6}
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                placeholder="123456"
                 style={{
-                  position: 'absolute',
-                  right: '10px',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '1.2rem',
-                  color: 'var(--text-muted)'
+                  textAlign: 'center',
+                  fontSize: '2rem',
+                  letterSpacing: '8px',
+                  padding: '10px'
                 }}
-                title={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? "👁️‍🗨️" : "👁"}
+                required
+                autoFocus
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+              <button type="submit" className="btn" disabled={loading}>
+                {loading ? 'Verifying...' : 'Verify & Sign In'}
+              </button>
+              <button type="button" className="btn btn-secondary" onClick={handleLocalResendOtp}>
+                Resend Code
+              </button>
+              <button type="button" className="btn btn-secondary" onClick={() => setOtpSent(false)}>
+                Back
               </button>
             </div>
-          </div>
-          <button className="btn" type="submit" disabled={loading}>
-            {loading ? 'Creating...' : 'Create Account'}
-          </button>
-        </form>
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="name">Full Name</label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="John Doe"
+                autoComplete="name"
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="email">Email</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="orgName">Organization</label>
+              <input
+                id="orgName"
+                name="orgName"
+                type="text"
+                value={orgName}
+                onChange={(e) => setOrgName(e.target.value)}
+                placeholder="Your company or team name (optional)"
+                autoComplete="organization"
+              />
+              <span className="form-hint">Leave blank to join the Default organization</span>
+            </div>
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Min. 8 characters"
+                  autoComplete="new-password"
+                  style={{ width: '100%', paddingRight: '40px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '1.2rem',
+                    color: 'var(--text-muted)'
+                  }}
+                  title={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? "👁️‍🗨️" : "👁"}
+                </button>
+              </div>
+            </div>
+            <button className="btn" type="submit" disabled={loading}>
+              {loading ? 'Creating...' : 'Create Account'}
+            </button>
+          </form>
+        )}
 
         <div className="auth-divider">
           <span>or</span>
@@ -488,21 +560,7 @@ export default function RegisterPage() {
                   </button>
                 </div>
               </form>
-            ) : verificationToken ? (
-              <form onSubmit={handleGoogleOtpVerify}>
-                <p className="subtitle" style={{ marginBottom: '24px' }}>
-                  Please confirm to complete registration for <strong>{googleEmail}</strong>.
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <button type="submit" className="btn" disabled={googleLoading} style={{ width: '100%' }}>
-                    {googleLoading ? 'Completing Registration...' : 'Complete Registration'}
-                  </button>
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowGooglePrompt(false)} style={{ width: '100%' }}>
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            ) : (
+             ) : (
               <form onSubmit={handleGoogleOtpVerify}>
                 <p className="subtitle">
                   We've sent a 6-digit OTP verification code to **{googleEmail}**. Please enter it below.

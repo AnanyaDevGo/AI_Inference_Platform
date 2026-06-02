@@ -58,12 +58,10 @@ spec:
               value: "redis://redis:6379/0"
             - name: OLLAMA_BASE_URL
               value: "http://ollama:11434"
-            - name: MAIL_SERVER
+            - name: SMTP_HOST
               value: "mailpit"
-            - name: MAIL_PORT
+            - name: SMTP_PORT
               value: "1025"
-            - name: MAIL_FROM
-              value: "noreply@infervoyage.local"
             - name: MODEL_NAME
               value: "llama3"
           resources:

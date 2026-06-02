@@ -46,6 +46,35 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("database_tables_ready")
 
+    # Seed Super Admin
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.ext.asyncio import AsyncSession
+    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async with async_session() as db:
+        try:
+            from app.services.auth_service import get_or_create_default_org, get_user_by_email, hash_password
+            from app.models.user import User
+            
+            existing_admin = await get_user_by_email(db, settings.SUPER_ADMIN_EMAIL)
+            if not existing_admin:
+                org = await get_or_create_default_org(db)
+                admin_user = User(
+                    org_id=org.id,
+                    name="Super Admin",
+                    email=settings.SUPER_ADMIN_EMAIL,
+                    password_hash=hash_password(settings.SUPER_ADMIN_PASSWORD),
+                    role="platform_admin",
+                    auth_provider="local",
+                    is_active=True,
+                    is_verified=True,
+                    password_set=True,
+                )
+                db.add(admin_user)
+                await db.commit()
+                logger.info("super_admin_seeded", email=settings.SUPER_ADMIN_EMAIL)
+        except Exception as e:
+            logger.error("super_admin_seeding_failed", error=str(e))
+
     # Validate Redis connectivity (critical dependency)
     try:
         from app.services.otp_service import get_redis_client

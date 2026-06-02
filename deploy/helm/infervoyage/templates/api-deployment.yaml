@@ -60,12 +60,10 @@ spec:
               value: "redis://{{ include "infervoyage.redis.fullname" . }}:6379/0"
             - name: OLLAMA_BASE_URL
               value: "http://{{ include "infervoyage.ollama.fullname" . }}:11434"
-            - name: MAIL_SERVER
+            - name: SMTP_HOST
               value: {{ .Values.api.mail.server | quote }}
-            - name: MAIL_PORT
+            - name: SMTP_PORT
               value: {{ .Values.api.mail.port | quote }}
-            - name: MAIL_FROM
-              value: {{ .Values.api.mail.from | quote }}
             - name: MODEL_NAME
               value: {{ .Values.api.modelName | quote }}
           resources:

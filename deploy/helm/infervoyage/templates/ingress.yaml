@@ -35,6 +35,27 @@ spec:
                 name: {{ include "infervoyage.api.fullname" . }}
                 port:
                   number: 8000
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "infervoyage.api.fullname" . }}
+                port:
+                  number: 8000
+          - path: /admin
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "infervoyage.api.fullname" . }}
+                port:
+                  number: 8000
+          - path: /health
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "infervoyage.api.fullname" . }}
+                port:
+                  number: 8000
           - path: /
             pathType: Prefix
             backend:

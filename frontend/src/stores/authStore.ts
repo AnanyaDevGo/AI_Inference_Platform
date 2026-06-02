@@ -41,6 +41,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: () => get().token !== null,
   isAdmin: () => {
     const role = get().role;
-    return role === 'platform_admin' || role === 'org_admin' || role === 'operator'
+    return role === 'platform_admin' || role === 'org_admin'
   },
 }))
