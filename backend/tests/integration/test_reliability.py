@@ -23,19 +23,39 @@ async def test_health_readiness(async_client: httpx.AsyncClient):
     assert "ollama" in data
 
 @pytest.mark.asyncio
-async def test_concurrency_limit(async_client: httpx.AsyncClient, token: str):
+async def test_concurrency_limit(
+    async_client: httpx.AsyncClient, token: str, monkeypatch: pytest.MonkeyPatch
+):
     """
     Test that exceeding MAX_CONCURRENT_INFERENCE triggers a 503 Service Unavailable.
     We mock the Ollama client internally to take time so we can pile up requests.
     """
+    import app.services.inference_service as inference_service
     settings = get_settings()
     max_concurrent = settings.MAX_CONCURRENT_INFERENCE
-    
-    # We will send (max_concurrent + 2) requests simultaneously.
-    # To reliably hit the semaphore limit without depending on external Ollama speeds,
-    # we would ideally mock _get_client(). But since this is a black-box integration test,
-    # we just fire off max_concurrent + 2 requests and assert that at least one returns a 503.
-    
+
+    # Mock the internal httpx client to sleep for 1 second to simulate slow inference
+    class MockAsyncClient:
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, exc_type, exc_val, exc_tb):
+            pass
+        async def post(self, url, **kwargs):
+            await asyncio.sleep(1.0)
+            mock_resp = httpx.Response(
+                200,
+                json={
+                    "message": {"role": "assistant", "content": "mocked response"},
+                    "done_reason": "stop",
+                    "prompt_eval_count": 5,
+                    "eval_count": 5
+                }
+            )
+            mock_resp.request = httpx.Request("POST", url)
+            return mock_resp
+
+    monkeypatch.setattr(inference_service, "_get_client", MockAsyncClient)
+
     headers = {"Authorization": f"Bearer {token}"}
     payload = {
         "model": "gemma2:2b",
@@ -48,12 +68,11 @@ async def test_concurrency_limit(async_client: httpx.AsyncClient, token: str):
 
     tasks = [make_request() for _ in range(max_concurrent + 2)]
     responses = await asyncio.gather(*tasks, return_exceptions=True)
-    
+
     status_codes = []
     for resp in responses:
         if isinstance(resp, httpx.Response):
             status_codes.append(resp.status_code)
-            
+
     # At least one request should be rejected with 503 Server too busy
-    # Some might pass (200) or timeout depending on Ollama load.
     assert 503 in status_codes

@@ -8,13 +8,7 @@ from app.config import get_settings
 from app.main import app
 
 
-@pytest_asyncio.fixture
-async def client() -> AsyncClient:
-    """Async test client bound to the FastAPI app."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
-        yield ac
+
 
 
 @pytest.mark.asyncio
@@ -114,7 +108,7 @@ async def test_chat_completion_streaming_returns_sse(
     """Streaming response must have content-type text/event-stream."""
     import app.routers.inference as inference_router
 
-    async def mock_stream(req, org_id="anonymous"):  # noqa: ANN001
+    async def mock_stream(req, org_id="anonymous", on_complete=None):  # noqa: ANN001
         yield 'data: {"id":"chatcmpl-test","object":"chat.completion.chunk","created":1715590800,"model":"llama3:8b-q4_K_M","choices":[{"index":0,"delta":{"content":"Hi"},"finish_reason":null}]}\n\n'
         yield "data: [DONE]\n\n"
 

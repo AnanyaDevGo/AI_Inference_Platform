@@ -31,8 +31,8 @@ async def _get_org_limits(db: AsyncSession, org_id: str) -> tuple[int, int]:
         row = result.one_or_none()
         if row:
             return row.rate_limit_rpm, row.rate_limit_burst
-    except Exception:
-        pass
+    except Exception as e:
+        logger.exception("get_org_limits_failed", org_id=org_id, error=str(e))
     return 60, 10  # defaults
 
 

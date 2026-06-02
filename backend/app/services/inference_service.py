@@ -51,8 +51,9 @@ def _make_completion_id() -> str:
 
 def _get_client() -> httpx.AsyncClient:
     settings = get_settings()
+    base_url = settings.INFERENCE_ENGINE_URL if settings.INFERENCE_ENGINE == "openai_compatible" and settings.INFERENCE_ENGINE_URL else settings.OLLAMA_BASE_URL
     return httpx.AsyncClient(
-        base_url=settings.OLLAMA_BASE_URL,
+        base_url=base_url,
         timeout=httpx.Timeout(
             connect=5.0,
             read=settings.INFERENCE_TIMEOUT_SECONDS,
@@ -101,9 +102,8 @@ async def complete(
     req: ChatCompletionRequest,
     org_id: str = "anonymous",
 ) -> ChatCompletionResponse:
-    """Proxy a non-streaming chat completion request to Ollama."""
+    """Proxy a non-streaming chat completion request to Ollama or OpenAI-compatible engine."""
     settings = get_settings()
-    payload = _build_ollama_payload(req)
     completion_id = _make_completion_id()
     start = time.perf_counter()
 
@@ -113,64 +113,114 @@ async def complete(
         org_id=org_id,
         stream=False,
         message_count=len(req.messages),
+        engine=settings.INFERENCE_ENGINE,
     )
 
     try:
         async with _inference_slot():
             async with _get_client() as client:
                 try:
-                    response = await asyncio.wait_for(
-                        client.post("/api/chat", json=payload),
-                        timeout=settings.INFERENCE_TIMEOUT_SECONDS,
-                    )
+                    if settings.INFERENCE_ENGINE == "openai_compatible":
+                        payload = req.model_dump()
+                        response = await asyncio.wait_for(
+                            client.post("/v1/chat/completions", json=payload),
+                            timeout=settings.INFERENCE_TIMEOUT_SECONDS,
+                        )
+                    else:
+                        payload = _build_ollama_payload(req)
+                        response = await asyncio.wait_for(
+                            client.post("/api/chat", json=payload),
+                            timeout=settings.INFERENCE_TIMEOUT_SECONDS,
+                        )
                 except asyncio.TimeoutError:
                     _record_metrics(org_id, req.model, "timeout", 0, 0, start)
                     raise InferenceTimeoutError()
                 except httpx.ConnectError:
                     _record_metrics(org_id, req.model, "error", 0, 0, start)
-                    raise InferenceUnavailableError("Cannot connect to Ollama")
+                    raise InferenceUnavailableError(f"Cannot connect to {settings.INFERENCE_ENGINE}")
 
         if response.status_code != 200:
             _record_metrics(org_id, req.model, "error", 0, 0, start)
             raise InferenceUnavailableError(
-                f"Ollama returned status {response.status_code}"
+                f"Inference engine returned status {response.status_code}: {response.text}"
             )
 
         body = response.json()
-        content = body.get("message", {}).get("content", "")
-        prompt_tokens = body.get("prompt_eval_count", 0)
-        completion_tokens = body.get("eval_count", 0)
+        if settings.INFERENCE_ENGINE == "openai_compatible":
+            choices_data = []
+            for idx, c in enumerate(body.get("choices", [])):
+                msg = c.get("message", {})
+                choices_data.append({
+                    "index": c.get("index", idx),
+                    "message": {
+                        "role": msg.get("role", "assistant"),
+                        "content": msg.get("content", ""),
+                    },
+                    "finish_reason": c.get("finish_reason", "stop"),
+                })
+            usage_data = body.get("usage", {})
+            prompt_tokens = usage_data.get("prompt_tokens", 0)
+            completion_tokens = usage_data.get("completion_tokens", 0)
 
-        _record_metrics(
-            org_id, req.model, "success", prompt_tokens, completion_tokens, start
-        )
+            _record_metrics(
+                org_id, req.model, "success", prompt_tokens, completion_tokens, start
+            )
 
-        logger.info(
-            "inference_complete",
-            model=req.model,
-            org_id=org_id,
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens,
-            duration_ms=int((time.perf_counter() - start) * 1000),
-        )
+            logger.info(
+                "inference_complete",
+                model=req.model,
+                org_id=org_id,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                duration_ms=int((time.perf_counter() - start) * 1000),
+            )
 
-        return ChatCompletionResponse(
-            id=completion_id,
-            created=int(time.time()),
-            model=req.model,
-            choices=[
-                {
-                    "index": 0,
-                    "message": {"role": "assistant", "content": content},
-                    "finish_reason": body.get("done_reason", "stop"),
-                }
-            ],
-            usage={
-                "prompt_tokens": prompt_tokens,
-                "completion_tokens": completion_tokens,
-                "total_tokens": prompt_tokens + completion_tokens,
-            },
-        )
+            return ChatCompletionResponse(
+                id=body.get("id", completion_id),
+                created=body.get("created", int(time.time())),
+                model=body.get("model", req.model),
+                choices=choices_data,
+                usage={
+                    "prompt_tokens": prompt_tokens,
+                    "completion_tokens": completion_tokens,
+                    "total_tokens": prompt_tokens + completion_tokens,
+                },
+            )
+        else:
+            content = body.get("message", {}).get("content", "")
+            prompt_tokens = body.get("prompt_eval_count", 0)
+            completion_tokens = body.get("eval_count", 0)
+
+            _record_metrics(
+                org_id, req.model, "success", prompt_tokens, completion_tokens, start
+            )
+
+            logger.info(
+                "inference_complete",
+                model=req.model,
+                org_id=org_id,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                duration_ms=int((time.perf_counter() - start) * 1000),
+            )
+
+            return ChatCompletionResponse(
+                id=completion_id,
+                created=int(time.time()),
+                model=req.model,
+                choices=[
+                    {
+                        "index": 0,
+                        "message": {"role": "assistant", "content": content},
+                        "finish_reason": body.get("done_reason", "stop"),
+                    }
+                ],
+                usage={
+                    "prompt_tokens": prompt_tokens,
+                    "completion_tokens": completion_tokens,
+                    "total_tokens": prompt_tokens + completion_tokens,
+                },
+            )
 
     except (InferenceTimeoutError, InferenceUnavailableError):
         raise
@@ -188,13 +238,12 @@ async def stream_complete(
     on_complete: Callable[[int, int], Coroutine[Any, Any, None]] | None = None,
 ) -> AsyncGenerator[str, None]:
     """
-    Proxy a streaming chat completion to Ollama.
-    Yields SSE-formatted strings: 'data: <json>\\n\\n'
+    Proxy a streaming chat completion to Ollama or OpenAI-compatible engine.
+    Yields SSE-formatted strings: 'data: <json>\n\n'
     Measures TTFT on first non-empty chunk.
     Handles client disconnect via GeneratorExit / CancelledError.
     """
     settings = get_settings()
-    payload = _build_ollama_payload(req)
     completion_id = _make_completion_id()
     start = time.perf_counter()
     first_token = True
@@ -207,80 +256,166 @@ async def stream_complete(
         model=req.model,
         org_id=org_id,
         message_count=len(req.messages),
+        engine=settings.INFERENCE_ENGINE,
     )
 
     try:
         async with _inference_slot():
             async with _get_client() as client:
                 try:
-                    async with client.stream(
-                        "POST",
-                        "/api/chat",
-                        json=payload,
-                        timeout=settings.INFERENCE_TIMEOUT_SECONDS,
-                    ) as response:
-                        if response.status_code != 200:
-                            _record_metrics(org_id, req.model, "error", 0, 0, start)
-                            raise InferenceUnavailableError(
-                                f"Ollama returned status {response.status_code}"
-                            )
-
-                        async for line in response.aiter_lines():
-                            if not line:
-                                continue
-
-                            try:
-                                chunk_data = json.loads(line)
-                            except json.JSONDecodeError:
-                                continue
-
-                            content = chunk_data.get("message", {}).get("content", "")
-                            done = chunk_data.get("done", False)
-
-                            # Measure TTFT on first content-bearing chunk
-                            if first_token and content:
-                                ttft_ms = int((time.perf_counter() - start) * 1000)
-                                first_token = False
-                                INFERENCE_TTFT_SECONDS.labels(
-                                    org_id=org_id, model=req.model
-                                ).observe(ttft_ms / 1000)
-                                logger.info(
-                                    "inference_stream_ttft",
-                                    model=req.model,
-                                    org_id=org_id,
-                                    ttft_ms=ttft_ms,
+                    if settings.INFERENCE_ENGINE == "openai_compatible":
+                        payload = req.model_dump()
+                        async with client.stream(
+                            "POST",
+                            "/v1/chat/completions",
+                            json=payload,
+                            timeout=settings.INFERENCE_TIMEOUT_SECONDS,
+                        ) as response:
+                            if response.status_code != 200:
+                                _record_metrics(org_id, req.model, "error", 0, 0, start)
+                                raise InferenceUnavailableError(
+                                    f"Inference engine returned status {response.status_code}"
                                 )
 
-                            if done:
-                                prompt_tokens = chunk_data.get("prompt_eval_count", 0)
-                                completion_tokens = chunk_data.get("eval_count", 0)
+                            async for line in response.aiter_lines():
+                                if not line:
+                                    continue
 
-                            chunk = ChatCompletionChunk(
-                                id=completion_id,
-                                created=int(time.time()),
-                                model=req.model,
-                                choices=[
-                                    {
-                                        "index": 0,
-                                        "delta": {
-                                            "role": "assistant" if first_token else None,
-                                            "content": content or None,
-                                        },
-                                        "finish_reason": "stop" if done else None,
-                                    }
-                                ],
-                            )
-                            yield f"data: {chunk.model_dump_json()}\n\n"
+                                if line.startswith("data: "):
+                                    line_content = line[6:].strip()
+                                elif line.startswith("data:"):
+                                    line_content = line[5:].strip()
+                                else:
+                                    continue
 
-                            if done:
-                                break
+                                if line_content == "[DONE]":
+                                    break
+
+                                try:
+                                    chunk_data = json.loads(line_content)
+                                except json.JSONDecodeError:
+                                    continue
+
+                                choices = chunk_data.get("choices", [])
+                                content = ""
+                                finish_reason = None
+                                if choices:
+                                    delta = choices[0].get("delta", {})
+                                    content = delta.get("content", "")
+                                    finish_reason = choices[0].get("finish_reason", None)
+
+                                if content:
+                                    completion_tokens += 1
+
+                                # Measure TTFT on first content-bearing chunk
+                                if first_token and content:
+                                    ttft_ms = int((time.perf_counter() - start) * 1000)
+                                    first_token = False
+                                    INFERENCE_TTFT_SECONDS.labels(
+                                        org_id=org_id, model=req.model
+                                    ).observe(ttft_ms / 1000)
+                                    logger.info(
+                                        "inference_stream_ttft",
+                                        model=req.model,
+                                        org_id=org_id,
+                                        ttft_ms=ttft_ms,
+                                    )
+
+                                usage = chunk_data.get("usage", None)
+                                if usage:
+                                    prompt_tokens = usage.get("prompt_tokens", 0)
+                                    completion_tokens = usage.get("completion_tokens", 0)
+
+                                chunk = ChatCompletionChunk(
+                                    id=chunk_data.get("id", completion_id),
+                                    created=chunk_data.get("created", int(time.time())),
+                                    model=chunk_data.get("model", req.model),
+                                    choices=[
+                                        {
+                                            "index": 0,
+                                            "delta": {
+                                                "role": "assistant" if first_token else None,
+                                                "content": content or None,
+                                            },
+                                            "finish_reason": finish_reason,
+                                        }
+                                    ],
+                                )
+                                yield f"data: {chunk.model_dump_json()}\n\n"
+
+                    else:
+                        payload = _build_ollama_payload(req)
+                        async with client.stream(
+                            "POST",
+                            "/api/chat",
+                            json=payload,
+                            timeout=settings.INFERENCE_TIMEOUT_SECONDS,
+                        ) as response:
+                            if response.status_code != 200:
+                                _record_metrics(org_id, req.model, "error", 0, 0, start)
+                                raise InferenceUnavailableError(
+                                    f"Ollama returned status {response.status_code}"
+                                )
+
+                            async for line in response.aiter_lines():
+                                if not line:
+                                    continue
+
+                                try:
+                                    chunk_data = json.loads(line)
+                                except json.JSONDecodeError:
+                                    continue
+
+                                content = chunk_data.get("message", {}).get("content", "")
+                                done = chunk_data.get("done", False)
+
+                                if content:
+                                    completion_tokens += 1
+
+                                # Measure TTFT on first content-bearing chunk
+                                if first_token and content:
+                                    ttft_ms = int((time.perf_counter() - start) * 1000)
+                                    first_token = False
+                                    INFERENCE_TTFT_SECONDS.labels(
+                                        org_id=org_id, model=req.model
+                                    ).observe(ttft_ms / 1000)
+                                    logger.info(
+                                        "inference_stream_ttft",
+                                        model=req.model,
+                                        org_id=org_id,
+                                        ttft_ms=ttft_ms,
+                                    )
+
+                                if done:
+                                    prompt_tokens = chunk_data.get("prompt_eval_count", 0)
+                                    completion_tokens = chunk_data.get("eval_count", 0)
+
+                                chunk = ChatCompletionChunk(
+                                    id=completion_id,
+                                    created=int(time.time()),
+                                    model=req.model,
+                                    choices=[
+                                        {
+                                            "index": 0,
+                                            "delta": {
+                                                "role": "assistant" if first_token else None,
+                                                "content": content or None,
+                                            },
+                                            "finish_reason": "stop" if done else None,
+                                        }
+                                    ],
+                                )
+                                yield f"data: {chunk.model_dump_json()}\n\n"
+
+                                if done:
+                                    break
 
                 except asyncio.TimeoutError:
                     _record_metrics(org_id, req.model, "timeout", 0, 0, start)
                     raise InferenceTimeoutError()
                 except httpx.ConnectError:
                     _record_metrics(org_id, req.model, "error", 0, 0, start)
-                    raise InferenceUnavailableError("Cannot connect to Ollama")
+                    raise InferenceUnavailableError(f"Cannot connect to {settings.INFERENCE_ENGINE}")
 
         # Final done sentinel
         yield "data: [DONE]\n\n"
@@ -354,22 +489,34 @@ def _record_metrics(
 # ── Ollama health check ───────────────────────────────────────────────────────
 
 async def check_ollama_health() -> bool:
-    """Returns True if Ollama is reachable. Used by /health endpoint."""
+    """Returns True if inference engine is reachable. Used by /health endpoint."""
+    settings = get_settings()
     try:
         async with _get_client() as client:
-            resp = await client.get("/api/tags", timeout=5.0)
-            return resp.status_code == 200
+            if settings.INFERENCE_ENGINE == "openai_compatible":
+                resp = await client.get("/v1/models", timeout=5.0)
+                return resp.status_code == 200
+            else:
+                resp = await client.get("/api/tags", timeout=5.0)
+                return resp.status_code == 200
     except Exception:
         return False
 
 
 async def list_ollama_models() -> list[dict[str, Any]]:
-    """Return the list of models available in Ollama."""
+    """Return the list of models available in the inference engine."""
+    settings = get_settings()
     try:
         async with _get_client() as client:
-            resp = await client.get("/api/tags", timeout=5.0)
-            if resp.status_code == 200:
-                return resp.json().get("models", [])
+            if settings.INFERENCE_ENGINE == "openai_compatible":
+                resp = await client.get("/v1/models", timeout=5.0)
+                if resp.status_code == 200:
+                    models_data = resp.json().get("data", [])
+                    return [{"name": m.get("id")} for m in models_data]
+            else:
+                resp = await client.get("/api/tags", timeout=5.0)
+                if resp.status_code == 200:
+                    return resp.json().get("models", [])
     except Exception:
         pass
     return []

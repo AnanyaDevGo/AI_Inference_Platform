@@ -11,13 +11,13 @@ metadata:
     # Enable CORS
     nginx.ingress.kubernetes.io/enable-cors: "true"
     # SSL/TLS Redirect
-    nginx.ingress.kubernetes.io/ssl-redirect: "false" # Set true in production with certs
+    nginx.ingress.kubernetes.io/ssl-redirect: "true" # Set true in production with certs
 spec:
-  # TLS configurations (uncomment and replace secretName with Cert-Manager's cert once issued)
-  # tls:
-  #   - hosts:
-  #       - infervoyage.local
-  #     secretName: infervoyage-tls-cert
+  # TLS configurations
+  tls:
+    - hosts:
+        - infervoyage.local
+      secretName: infervoyage-tls-cert
   rules:
     - host: infervoyage.local
       http:

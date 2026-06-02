@@ -138,3 +138,9 @@ Thumbs.db
 
 # Binaries
 kubectl
+
+# Certificates
+deploy/kubernetes/ingress/certs/
+
+# Scratch
+scratch/

@@ -112,9 +112,9 @@ ingress:
     nginx.ingress.kubernetes.io/limit-rps: "10"
     nginx.ingress.kubernetes.io/limit-burst-multiplier: "2"
     nginx.ingress.kubernetes.io/enable-cors: "true"
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
   tls:
-    enabled: false
+    enabled: true
     secretName: "infervoyage-tls-cert"
 
 # ── Locust Load Tester Config ──────────────────────────────────────────────────

@@ -56,6 +56,8 @@ class Settings(BaseSettings):
     INFERENCE_TIMEOUT_SECONDS: int = 120
     INFERENCE_NUM_CTX: int = 2048
     MAX_CONCURRENT_INFERENCE: int = 4
+    INFERENCE_ENGINE: Literal["ollama", "openai_compatible"] = "ollama"
+    INFERENCE_ENGINE_URL: str | None = None
 
     # ── CORS ───────────────────────────────────────────────────────────────
     ALLOWED_ORIGINS: list[str] | str = [

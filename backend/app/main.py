@@ -35,6 +35,9 @@ async def pull_default_models():
     from app.services.inference_service import check_ollama_health, _get_client
     
     settings = get_settings()
+    if settings.INFERENCE_ENGINE == "openai_compatible":
+        logger.info("skipping_model_pull_for_openai_compatible_engine")
+        return
     logger.info("checking_ollama_ready_to_pull_models")
     # Wait for Ollama up to 60s
     for i in range(12):
@@ -134,14 +137,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.error("redis_connection_failed", url=settings.REDIS_URL, error=str(e))
         raise e
 
-    # Validate Ollama connectivity (non-fatal warning — Ollama may start later)
+    # Validate inference engine connectivity (non-fatal warning — engine may start later)
+    engine_url = settings.INFERENCE_ENGINE_URL if settings.INFERENCE_ENGINE == "openai_compatible" else settings.OLLAMA_BASE_URL
     if await check_ollama_health():
-        logger.info("ollama_connected", url=settings.OLLAMA_BASE_URL)
+        logger.info("inference_engine_connected", engine=settings.INFERENCE_ENGINE, url=engine_url)
     else:
         logger.warning(
-            "ollama_unreachable",
-            url=settings.OLLAMA_BASE_URL,
-            note="Inference requests will fail until Ollama is reachable",
+            "inference_engine_unreachable",
+            engine=settings.INFERENCE_ENGINE,
+            url=engine_url,
+            note=f"Inference requests will fail until {settings.INFERENCE_ENGINE} is reachable",
         )
 
     import asyncio
