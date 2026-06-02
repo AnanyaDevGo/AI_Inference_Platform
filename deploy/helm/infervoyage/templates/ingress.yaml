@@ -18,8 +18,7 @@ spec:
       secretName: {{ .Values.ingress.tls.secretName | quote }}
   {{- end }}
   rules:
-    - host: {{ .Values.ingress.hostname | quote }}
-      http:
+    - http:
         paths:
           - path: /v1
             pathType: Prefix

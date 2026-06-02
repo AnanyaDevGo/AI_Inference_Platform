@@ -19,8 +19,7 @@ spec:
         - infervoyage.local
       secretName: infervoyage-tls-cert
   rules:
-    - host: infervoyage.local
-      http:
+    - http:
         paths:
           # API Backend endpoints
           - path: /v1
