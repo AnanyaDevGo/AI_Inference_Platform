@@ -254,6 +254,19 @@ async def send_otp_verification_email(email: str, code: str) -> None:
         <p style="color: #6b7280; font-size: 0.875rem;">This code is valid for <strong>5 minutes</strong>. If you did not request this, please ignore this email.</p>
     </div>
     """
+
+    if settings.DEBUG or settings.SMTP_HOST == "mailpit":
+        email_block = f"""
+========================================================================
+                      🔒 AI PLATFORM SECURITY OTP (DEBUG LOG)
+========================================================================
+To: {email}
+Subject: {subject}
+
+{body_text}
+========================================================================
+"""
+        print(email_block)
     
     try:
         await provider.send_email(
@@ -319,6 +332,19 @@ async def send_password_reset_email(email: str, code: str) -> None:
         <p style="color: #6b7280; font-size: 0.875rem;">This code is valid for <strong>5 minutes</strong>. If you did not request a password reset, you can safely ignore this email.</p>
     </div>
     """
+
+    if settings.DEBUG or settings.SMTP_HOST == "mailpit":
+        email_block = f"""
+========================================================================
+                      🔒 AI PLATFORM SECURITY OTP (DEBUG LOG)
+========================================================================
+To: {email}
+Subject: {subject}
+
+{body_text}
+========================================================================
+"""
+        print(email_block)
     
     try:
         await provider.send_email(

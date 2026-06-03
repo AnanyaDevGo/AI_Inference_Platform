@@ -59,9 +59,35 @@ spec:
             - name: OLLAMA_BASE_URL
               value: "http://ollama:11434"
             - name: SMTP_HOST
-              value: "mailpit"
+              valueFrom:
+                secretKeyRef:
+                  name: api-secret
+                  key: smtp-host
             - name: SMTP_PORT
-              value: "1025"
+              valueFrom:
+                secretKeyRef:
+                  name: api-secret
+                  key: smtp-port
+            - name: SMTP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: api-secret
+                  key: smtp-user
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: api-secret
+                  key: smtp-password
+            - name: RESEND_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: api-secret
+                  key: resend-api-key
+            - name: RESEND_SENDER
+              valueFrom:
+                secretKeyRef:
+                  name: api-secret
+                  key: resend-sender
             - name: MODEL_NAME
               value: "llama3"
           resources:

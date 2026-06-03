@@ -177,17 +177,25 @@ export default function ChatPage() {
   const fetchConversation = useChatStore((s) => s.fetchConversation)
   const clearAll = useChatStore((s) => s.clearAll)
 
-  // Load conversations list on mount
+  // Load conversations list on mount and restore active chat from localStorage
   useEffect(() => {
-    if (token) fetchConversations(token)
+    if (token) {
+      fetchConversations(token).then(() => {
+        const savedId = localStorage.getItem('activeChatId')
+        if (savedId) {
+          useChatStore.getState().setActiveId(savedId)
+          useChatStore.getState().fetchConversation(token, savedId)
+        }
+      })
+    }
   }, [token, fetchConversations])
 
   // Smart auto-scroll
   const scrollToBottom = useCallback(() => {
     if (!userIsScrolledUp.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      messagesEndRef.current?.scrollIntoView({ behavior: streaming ? 'auto' : 'smooth' })
     }
-  }, [])
+  }, [streaming])
 
   const activeConv = getActive()
 
@@ -629,6 +637,25 @@ export default function ChatPage() {
               </div>
             </div>
           ))}
+          
+          {streaming && (messages.length === 0 || messages[messages.length - 1].role === 'user' || !messages[messages.length - 1].content) && (
+            <div className="message assistant typing" style={{ background: 'rgba(255,255,255,0.015)' }}>
+              <div className="message-avatar" style={{ background: 'linear-gradient(135deg, #10b981, #34d399)', color: 'white' }}>✦</div>
+              <div className="message-content">
+                <div className="message-role">
+                  <span>{formatModelDisplayName(selectedModel)}</span>
+                </div>
+                <div className="message-text" style={{ padding: '8px 0' }}>
+                  <div className="typing-indicator" style={{ display: 'flex', gap: '6px', alignItems: 'center', height: '20px' }}>
+                    <span style={{ width: '8px', height: '8px', background: 'var(--accent)', borderRadius: '50%', display: 'inline-block', animation: 'typing-pulse 1.4s infinite ease-in-out both' }}></span>
+                    <span style={{ width: '8px', height: '8px', background: 'var(--accent)', borderRadius: '50%', display: 'inline-block', animation: 'typing-pulse 1.4s infinite ease-in-out both 0.2s' }}></span>
+                    <span style={{ width: '8px', height: '8px', background: 'var(--accent)', borderRadius: '50%', display: 'inline-block', animation: 'typing-pulse 1.4s infinite ease-in-out both 0.4s' }}></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
 

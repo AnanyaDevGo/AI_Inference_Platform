@@ -61,9 +61,35 @@ spec:
             - name: OLLAMA_BASE_URL
               value: "http://{{ include "infervoyage.ollama.fullname" . }}:11434"
             - name: SMTP_HOST
-              value: {{ .Values.api.mail.server | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "infervoyage.fullname" . }}-secrets
+                  key: smtp-host
             - name: SMTP_PORT
-              value: {{ .Values.api.mail.port | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "infervoyage.fullname" . }}-secrets
+                  key: smtp-port
+            - name: SMTP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "infervoyage.fullname" . }}-secrets
+                  key: smtp-user
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "infervoyage.fullname" . }}-secrets
+                  key: smtp-password
+            - name: RESEND_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "infervoyage.fullname" . }}-secrets
+                  key: resend-api-key
+            - name: RESEND_SENDER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "infervoyage.fullname" . }}-secrets
+                  key: resend-sender
             - name: MODEL_NAME
               value: {{ .Values.api.modelName | quote }}
           resources:

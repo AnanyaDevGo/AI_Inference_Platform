@@ -62,7 +62,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
   activeId: null,
   loading: false,
 
-  setActiveId: (id) => set({ activeId: id }),
+  setActiveId: (id) => {
+    set({ activeId: id })
+    if (id) {
+      localStorage.setItem('activeChatId', id)
+    } else {
+      localStorage.removeItem('activeChatId')
+    }
+  },
 
   fetchConversations: async (token) => {
     set({ loading: true })
@@ -117,6 +124,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       conversations: [conv, ...s.conversations],
       activeId: data.id,
     }))
+    localStorage.setItem('activeChatId', data.id)
     return data.id
   },
 
@@ -125,6 +133,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((s) => {
       const filtered = s.conversations.filter((c) => c.id !== id)
       const newActive = s.activeId === id ? (filtered[0]?.id ?? null) : s.activeId
+      if (newActive) {
+        localStorage.setItem('activeChatId', newActive)
+      } else {
+        localStorage.removeItem('activeChatId')
+      }
       return { conversations: filtered, activeId: newActive }
     })
   },
