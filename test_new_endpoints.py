@@ -6,7 +6,7 @@ import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-API_URL = "https://localhost" # Target Nginx HTTPS directly
+API_URL = "https://localhost:8443" # Target Nginx HTTPS directly
 
 def run_cmd(cmd):
     # Try running directly first (for WSL/Linux environments)
@@ -37,17 +37,14 @@ def get_otp_from_logs(email):
     except Exception:
         pass
 
-    # Fallback to docker logs (for Console provider verification)
-    cmd = "docker-compose logs --tail=150 api"
+    # Fallback to kubectl logs (for Console provider verification in K8s)
+    cmd = "kubectl logs -n infervoyage-dev -l component=api --tail=150"
     logs = run_cmd(cmd)
-    for line in reversed(logs.split("\n")):
-        if email in line and "Code:" in line:
-            parts = line.split("Code:")
-            if len(parts) > 1:
-                return parts[1].strip()[:6]
-        if "verification code is:" in line.lower():
-            import re
-            match = re.search(r'\b\d{6}\b', line)
+    import re
+    blocks = logs.split("========================================================================")
+    for block in reversed(blocks):
+        if f"To: {email}" in block or f"to: {email}" in block.lower():
+            match = re.search(r'\b\d{6}\b', block)
             if match:
                 return match.group(0)
     return None
@@ -83,12 +80,21 @@ def test_forgot_password():
     print("Retrieved reset OTP code:", otp_code)
     assert otp_code is not None, "Failed to retrieve reset OTP code"
 
+    # Verify OTP first
+    print("Verifying reset OTP via /auth/verify-reset-otp...")
+    r = requests.post(f"{API_URL}/auth/verify-reset-otp", json={
+        "email": email,
+        "code": otp_code,
+        "verification_token": reset_token
+    }, verify=False)
+    print("Verify reset response:", r.status_code, r.text)
+    assert r.status_code == 200
+
     # Reset password
     print("Resetting password...")
     r = requests.post(f"{API_URL}/auth/reset-password", json={
         "email": email,
         "reset_token": reset_token,
-        "code": otp_code,
         "new_password": new_password
     }, verify=False)
     print("Reset response:", r.status_code, r.text)
@@ -126,17 +132,22 @@ def test_google_registration_verification():
     print("Retrieved verification token from response:", verification_token)
     assert verification_token is not None, "Failed to retrieve verification token from response"
 
-    # 2. Complete verification via token
-    print("Completing verification via verification_token...")
-    r = requests.post(f"{API_URL}/auth/verify-otp", json={
+    # 2. Complete verification via token and code
+    otp_code = get_otp_from_logs(email)
+    print("Retrieved Google registration OTP code:", otp_code)
+    assert otp_code is not None
+
+    print("Completing verification via verification_token and code...")
+    r = requests.post(f"{API_URL}/auth/verify-email-otp", json={
         "email": email,
-        "verification_token": verification_token
+        "verification_token": verification_token,
+        "code": otp_code
     }, verify=False)
     print("Verify OTP response:", r.status_code, r.text)
     assert r.status_code == 200
     login_data = r.json()
     assert login_data.get("access_token") is not None
-    print("Successfully registered and logged in Google user via JWT token!")
+    print("Successfully registered and logged in Google user via JWT token and OTP!")
 
 def test_message_truncation(token):
     print("\n--- Testing Message Truncation Endpoint ---")

@@ -6,7 +6,7 @@ import subprocess
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-API_URL = "https://localhost"
+API_URL = "https://localhost:8443"
 
 def run_cmd(cmd):
     # Try running directly first (for WSL/Linux environments)
@@ -36,25 +36,25 @@ def get_otp_from_logs(email):
     except Exception:
         pass
 
-    # Fallback to docker logs (for Console provider verification)
-    cmd = "docker-compose logs --tail=150 api"
+    # Fallback to kubectl logs (for Console provider verification in K8s)
+    cmd = "kubectl logs -n infervoyage-dev -l component=api --tail=150"
     logs = run_cmd(cmd)
-    for line in reversed(logs.split("\n")):
-        if "verification code is:" in line.lower():
-            match = re.search(r'\b\d{6}\b', line)
+    blocks = logs.split("========================================================================")
+    for block in reversed(blocks):
+        if f"To: {email}" in block or f"to: {email}" in block.lower():
+            match = re.search(r'\b\d{6}\b', block)
             if match:
                 return match.group(0)
     return None
 
+def run_postgres_sql(sql):
+    cmd = f'kubectl exec -i -n infervoyage-dev infervoyage-dev-postgres-0 -- psql -U appuser -d inference_platform -c "{sql}"'
+    return run_cmd(cmd)
+
 def promote_user_to_role(email, role):
-    import subprocess
     sql = f"UPDATE users SET role = '{role}' WHERE email = '{email}';"
-    cmd = ["docker", "exec", "-i", "ai_inference_platform-db-1", "psql", "-U", "appuser", "-d", "inference_platform", "-c", sql]
-    res = subprocess.run(cmd, capture_output=True, text=True)
-    if res.returncode != 0:
-        print(f"Failed to promote {email} to {role}: {res.stderr}")
-    else:
-        print(f"Promoted {email} to {role}: {res.stdout.strip()}")
+    res = run_postgres_sql(sql)
+    print(f"Promote response: {res.strip()}")
 
 def test_auth_flow():
     print("\n=== STARTING NEW AUTH FLOW TESTS ===")
@@ -71,11 +71,17 @@ def test_auth_flow():
     verification_token = res["verification_token"]
     print("Google sign-in successfully returned requires_otp=True and verification_token.")
 
-    # 2. Test verify-otp sets is_verified=True and returns active tokens
-    print("2. Verifying OTP via JWT verification token...")
-    r = requests.post(f"{API_URL}/auth/verify-otp", json={
+    # 2. Test verify-email-otp sets is_verified=True and returns active tokens
+    print("2. Fetching Google registration OTP from logs...")
+    otp_code = get_otp_from_logs(email)
+    print(f"Retrieved Google registration OTP code: {otp_code}")
+    assert otp_code is not None
+
+    print("2b. Verifying Google registration OTP via JWT verification token...")
+    r = requests.post(f"{API_URL}/auth/verify-email-otp", json={
         "email": email,
-        "verification_token": verification_token
+        "verification_token": verification_token,
+        "code": otp_code
     }, verify=False)
     assert r.status_code == 200
     res = r.json()
@@ -127,20 +133,87 @@ def test_auth_flow():
     assert reset_token is not None
     print("Forgot password for real email also returned identical generic success message with reset_token.")
 
+    # 5c. Test rate-limiting (Max 3 OTP requests / resends within 15 minutes)
+    print("\n--- 5c. Testing OTP Resend Rate Limiting (Max 3 in 15 mins) ---")
+    rate_email = f"rate_limit_{int(time.time())}@example.com"
+    # Register rate_email (active immediately)
+    r = requests.post(f"{API_URL}/auth/register", json={
+        "name": "Rate User",
+        "email": rate_email,
+        "password": "ratepassword123"
+    }, verify=False)
+    assert r.status_code == 201
+
+    # Request 1 (triggered by registration/forgot-password)
+    r = requests.post(f"{API_URL}/auth/forgot-password", json={"email": rate_email}, verify=False)
+    assert r.status_code == 200
+    # Request 2
+    r = requests.post(f"{API_URL}/auth/forgot-password", json={"email": rate_email}, verify=False)
+    assert r.status_code == 200
+    # Request 3
+    r = requests.post(f"{API_URL}/auth/forgot-password", json={"email": rate_email}, verify=False)
+    assert r.status_code == 200
+    # Request 4 (should be rate-limited)
+    r = requests.post(f"{API_URL}/auth/forgot-password", json={"email": rate_email}, verify=False)
+    assert r.status_code == 400
+    assert "Too many requests" in r.text
+    print("Rate limit check passed: 4th request was blocked with 400.")
+
+    # 5d. Test verification lockout (Max 5 attempts)
+    print("\n--- 5d. Testing OTP Lockout (Max 5 failed attempts) ---")
+    # Get latest OTP for rate_email
+    rate_otp = get_otp_from_logs(rate_email)
+    assert rate_otp is not None
+    print(f"Retrieved rate user reset OTP code: {rate_otp}")
+
+    # Reset token from 3rd request response
+    rate_reset_token = r.json().get("reset_token") # Wait, 4th request returned 400, let's request token from the 3rd request:
+    # Actually we don't even need the reset token if we verify wrong codes
+    # Try 5 failed attempts
+    for attempt in range(1, 6):
+        r = requests.post(f"{API_URL}/auth/verify-reset-otp", json={
+            "email": rate_email,
+            "code": "000000" # wrong code
+        }, verify=False)
+        assert r.status_code == 400
+        print(f"Failed attempt {attempt} response: {r.text.strip()}")
+        if attempt == 5:
+            assert "Maximum verification attempts exceeded" in r.text
+
+    # 6th attempt (even with correct code, it should be locked out)
+    r = requests.post(f"{API_URL}/auth/verify-reset-otp", json={
+        "email": rate_email,
+        "code": rate_otp
+    }, verify=False)
+    assert r.status_code == 400
+    assert "Maximum verification attempts exceeded" in r.text
+    print("Lockout check passed: 6th attempt with correct code was blocked due to lockout.")
+
     # 6. Test OTP verification requirement on password reset
-    print("6. Testing password reset with correct OTP code...")
+    print("\n--- 6. Testing password reset flow using separate verification endpoint ---")
     otp_code = get_otp_from_logs(email)
     print(f"Retrieved reset OTP code: {otp_code}")
     assert otp_code is not None
 
+    # Call verify-reset-otp first
+    print("6a. Verifying reset OTP via /auth/verify-reset-otp...")
+    r = requests.post(f"{API_URL}/auth/verify-reset-otp", json={
+        "email": email,
+        "code": otp_code,
+        "verification_token": reset_token
+    }, verify=False)
+    assert r.status_code == 200
+    print("Reset OTP successfully verified.")
+
+    # Reset password passing reset_token (no code needed or can be passed)
+    print("6b. Executing password reset via /auth/reset-password...")
     r = requests.post(f"{API_URL}/auth/reset-password", json={
         "email": email,
         "reset_token": reset_token,
-        "code": otp_code,
         "new_password": "brandnewpassword999"
     }, verify=False)
     assert r.status_code == 200
-    print("Password reset successfully completed with correct OTP code.")
+    print("Password reset successfully completed.")
 
     # Test login with the brand new password
     r = requests.post(f"{API_URL}/auth/login", json={

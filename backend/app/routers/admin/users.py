@@ -88,6 +88,8 @@ async def create_user(
         email=req.email,
         password_hash=hash_password(req.password),
         role=req.role,
+        is_active=True,
+        is_verified=True,
     )
     db.add(new_user)
     await db.flush()

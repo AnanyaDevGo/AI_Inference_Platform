@@ -94,6 +94,27 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Create DB tables if they don't exist
     engine = get_engine()
+    
+    # Self-healing migration for otps table
+    from sqlalchemy import text
+    schema_ok = False
+    async with engine.connect() as conn:
+        try:
+            # Try to query the new 'purpose' column
+            res = await conn.execute(text("SELECT purpose FROM otps LIMIT 1"))
+            await res.all()
+            schema_ok = True
+        except Exception:
+            pass
+
+    if not schema_ok:
+        logger.info("otps_table_has_outdated_schema_or_does_not_exist_dropping_if_exists")
+        async with engine.begin() as conn:
+            try:
+                await conn.execute(text("DROP TABLE IF EXISTS otps CASCADE"))
+            except Exception as e:
+                logger.error("failed_to_drop_old_otps_table", error=str(e))
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("database_tables_ready")

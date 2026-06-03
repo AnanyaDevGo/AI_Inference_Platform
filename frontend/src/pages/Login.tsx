@@ -36,11 +36,34 @@ export default function LoginPage() {
   const [forgotEmail, setForgotEmail] = useState('')
   const [forgotOtp, setForgotOtp] = useState('')
   const [newPassword, setNewPassword] = useState('')
-  const [forgotStep, setForgotStep] = useState<1 | 2>(1)
+  const [forgotStep, setForgotStep] = useState<1 | 2 | 3>(1)
   const [forgotLoading, setForgotLoading] = useState(false)
   const [forgotError, setForgotError] = useState('')
   const [forgotSuccess, setForgotSuccess] = useState('')
   const [resetToken, setResetToken] = useState<string | null>(null)
+  const [forgotCountdown, setForgotCountdown] = useState(300)
+  const [forgotResendCooldown, setForgotResendCooldown] = useState(0)
+  const [forgotResendAttempts, setForgotResendAttempts] = useState(0)
+
+  useEffect(() => {
+    let timer: any = null
+    if (showForgotPassword && forgotStep === 2 && forgotCountdown > 0) {
+      timer = setInterval(() => {
+        setForgotCountdown((c) => c - 1)
+      }, 1000)
+    }
+    return () => clearInterval(timer)
+  }, [showForgotPassword, forgotStep, forgotCountdown])
+
+  useEffect(() => {
+    let timer: any = null
+    if (forgotResendCooldown > 0) {
+      timer = setInterval(() => {
+        setForgotResendCooldown((c) => c - 1)
+      }, 1000)
+    }
+    return () => clearInterval(timer)
+  }, [forgotResendCooldown])
 
   const setAuth = useAuthStore((s) => s.setAuth)
   const navigate = useNavigate()
@@ -129,8 +152,36 @@ export default function LoginPage() {
         setResetToken(null)
       }
       setForgotStep(2)
+      setForgotCountdown(300)
+      setForgotResendCooldown(60)
+      setForgotResendAttempts(0)
     } catch (err: any) {
       setForgotError(err.message || 'Failed to send reset code')
+    } finally {
+      setForgotLoading(false)
+    }
+  }
+
+  const handleVerifyResetOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setForgotError('')
+    if (forgotCountdown <= 0) return setForgotError('The verification code has expired. Please request a new code.')
+    if (!forgotOtp || forgotOtp.length !== 6) return setForgotError('Please enter the 6-digit code')
+
+    const payload: Record<string, any> = {
+      email: forgotEmail,
+      code: forgotOtp
+    }
+    if (resetToken) {
+      payload.verification_token = resetToken
+    }
+
+    setForgotLoading(true)
+    try {
+      await apiPost('/auth/verify-reset-otp', payload)
+      setForgotStep(3)
+    } catch (err: any) {
+      setForgotError(err.message || 'Invalid or expired verification code')
     } finally {
       setForgotLoading(false)
     }
@@ -140,7 +191,6 @@ export default function LoginPage() {
     e.preventDefault()
     setForgotError('')
 
-    if (!forgotOtp || forgotOtp.length !== 6) return setForgotError('Please enter the 6-digit code')
     if (!newPassword || newPassword.length < 8) return setForgotError('Password must be at least 8 characters')
 
     const payload: Record<string, any> = {
@@ -171,6 +221,24 @@ export default function LoginPage() {
       setForgotError(err.message || 'Password reset failed')
     } finally {
       setForgotLoading(false)
+    }
+  }
+
+  const handleResendForgotOtp = async () => {
+    if (forgotResendCooldown > 0) return
+    if (forgotResendAttempts >= 3) {
+      setForgotError("Maximum resend attempts exceeded. Please try again later.")
+      return
+    }
+    setForgotError('')
+    try {
+      await apiPost('/auth/forgot-password', { email: forgotEmail })
+      setForgotResendCooldown(60)
+      setForgotResendAttempts((a) => a + 1)
+      setForgotCountdown(300)
+      alert('Verification code resent successfully!')
+    } catch (err: any) {
+      setForgotError(err.message || 'Resend failed')
     }
   }
 
@@ -412,7 +480,9 @@ export default function LoginPage() {
             <p className="subtitle">
               {forgotStep === 1 
                 ? 'Enter your email to receive a password reset code' 
-                : 'Enter verification code and your new password'}
+                : forgotStep === 2
+                  ? `Enter the 6-digit verification code sent to ${forgotEmail}`
+                  : 'Enter your new password to complete the reset'}
             </p>
             
             {forgotError && <div className="error-msg">{forgotError}</div>}
@@ -442,8 +512,8 @@ export default function LoginPage() {
                   </button>
                 </div>
               </form>
-            ) : (
-              <form onSubmit={handleResetPasswordSubmit}>
+            ) : forgotStep === 2 ? (
+              <form onSubmit={handleVerifyResetOtp}>
                 <div className="form-group">
                   <label htmlFor="forgotOtpInput">6-Digit Code</label>
                   <input
@@ -453,11 +523,50 @@ export default function LoginPage() {
                     value={forgotOtp}
                     onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, ''))}
                     placeholder="123456"
+                    style={{
+                      textAlign: 'center',
+                      fontSize: '2rem',
+                      letterSpacing: '8px',
+                      padding: '10px'
+                    }}
                     required
                     autoFocus
                   />
                 </div>
-                <div className="form-group" style={{ marginTop: '16px' }}>
+                
+                <div style={{ textAlign: 'center', margin: '15px 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                  {forgotCountdown > 0 ? (
+                    <span>Code expires in <strong style={{ color: 'var(--accent)' }}>{Math.floor(forgotCountdown / 60)}:{(forgotCountdown % 60).toString().padStart(2, '0')}</strong></span>
+                  ) : (
+                    <span style={{ color: 'var(--danger)', fontWeight: 'bold' }}>The verification code has expired. Please request a new code.</span>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+                  <button type="submit" className="btn" disabled={forgotLoading || forgotCountdown <= 0}>
+                    {forgotLoading ? 'Verifying...' : 'Verify Code'}
+                  </button>
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary" 
+                    onClick={handleResendForgotOtp}
+                    disabled={forgotResendCooldown > 0 || forgotResendAttempts >= 3 || forgotLoading}
+                    style={{ minWidth: '110px' }}
+                  >
+                    {forgotResendCooldown > 0 
+                      ? `Resend (${forgotResendCooldown}s)` 
+                      : forgotResendAttempts >= 3 
+                        ? 'Resend Locked' 
+                        : 'Resend Code'}
+                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={() => setForgotStep(1)}>
+                    Back
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleResetPasswordSubmit}>
+                <div className="form-group">
                   <label htmlFor="newPasswordInput">New Password</label>
                   <input
                     id="newPasswordInput"
@@ -466,14 +575,14 @@ export default function LoginPage() {
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Minimum 8 characters"
                     required
-                    autoFocus={!!resetToken}
+                    autoFocus
                   />
                 </div>
                 <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
                   <button type="submit" className="btn" disabled={forgotLoading}>
                     {forgotLoading ? 'Resetting...' : 'Reset Password'}
                   </button>
-                  <button type="button" className="btn btn-secondary" onClick={() => setForgotStep(1)}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setForgotStep(2)}>
                     Back
                   </button>
                 </div>

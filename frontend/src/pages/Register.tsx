@@ -37,6 +37,29 @@ export default function RegisterPage() {
   const [otpSent, setOtpSent] = useState(false)
   const [otpCode, setOtpCode] = useState('')
   const [verificationToken, setVerificationToken] = useState<string | null>(null)
+  const [countdown, setCountdown] = useState(300)
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const [resendAttempts, setResendAttempts] = useState(0)
+
+  useEffect(() => {
+    let timer: any = null
+    if (otpSent && countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((c) => c - 1)
+      }, 1000)
+    }
+    return () => clearInterval(timer)
+  }, [otpSent, countdown])
+
+  useEffect(() => {
+    let timer: any = null
+    if (resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown((c) => c - 1)
+      }, 1000)
+    }
+    return () => clearInterval(timer)
+  }, [resendCooldown])
 
   // Password Setup States for OAuth users
   const [showPasswordSetup, setShowPasswordSetup] = useState(false)
@@ -111,6 +134,9 @@ export default function RegisterPage() {
         setGoogleEmail(data.user_email)
         setVerificationToken(data.verification_token || null)
         setOtpSent(true)
+        setCountdown(300)
+        setResendCooldown(60)
+        setResendAttempts(0)
         setShowGooglePrompt(true)
       } else {
         setAuth(data.access_token, data.user_name, data.user_email)
@@ -139,6 +165,9 @@ export default function RegisterPage() {
       if (data.requires_otp) {
         setVerificationToken(data.verification_token || null)
         setOtpSent(true)
+        setCountdown(300)
+        setResendCooldown(60)
+        setResendAttempts(0)
       } else {
         setAuth(data.access_token, data.user_name, data.user_email)
         navigate('/chat')
@@ -153,6 +182,7 @@ export default function RegisterPage() {
   const handleLocalOtpVerify = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    if (countdown <= 0) return setError('The verification code has expired. Please request a new code.')
     if (!otpCode || otpCode.length !== 6) return setError('Please enter a 6-digit code')
 
     setLoading(true)
@@ -161,7 +191,7 @@ export default function RegisterPage() {
       if (verificationToken) {
         payload.verification_token = verificationToken
       }
-      const data = await apiPost<AuthResponse>('/auth/verify-otp', payload)
+      const data = await apiPost<AuthResponse>('/auth/verify-email-otp', payload)
       setAuth(data.access_token, data.user_name, data.user_email)
       navigate('/chat')
     } catch (err: any) {
@@ -172,9 +202,17 @@ export default function RegisterPage() {
   }
 
   const handleLocalResendOtp = async () => {
+    if (resendCooldown > 0) return
+    if (resendAttempts >= 3) {
+      setError("Maximum resend attempts exceeded. Please try again later.")
+      return
+    }
     setError('')
     try {
-      await apiPost('/auth/send-otp', { email })
+      await apiPost('/auth/send-verification-otp', { email })
+      setResendCooldown(60)
+      setResendAttempts(a => a + 1)
+      setCountdown(300)
       alert('Verification code resent successfully!')
     } catch (err: any) {
       setError(err.message || 'Resend failed')
@@ -198,6 +236,9 @@ export default function RegisterPage() {
       if (data.requires_otp) {
         setVerificationToken(data.verification_token || null)
         setOtpSent(true)
+        setCountdown(300)
+        setResendCooldown(60)
+        setResendAttempts(0)
       } else {
         setAuth(data.access_token, data.user_name, data.user_email)
         setShowGooglePrompt(false)
@@ -214,6 +255,11 @@ export default function RegisterPage() {
     e.preventDefault()
     setGoogleError('')
 
+    if (countdown <= 0) {
+      setGoogleError("The verification code has expired. Please request a new code.")
+      return
+    }
+
     if (!otpCode || otpCode.length !== 6) return setGoogleError('Please enter a 6-digit code')
     const payload: Record<string, any> = { email: googleEmail, code: otpCode }
     if (verificationToken) {
@@ -222,13 +268,13 @@ export default function RegisterPage() {
 
     setGoogleLoading(true)
     try {
-      const data = await apiPost<AuthResponse>('/auth/verify-otp', payload)
+      const data = await apiPost<AuthResponse>('/auth/verify-email-otp', payload)
       setTempAccessToken(data.access_token)
       setAuth(data.access_token, data.user_name, data.user_email)
       setVerificationToken(null)
       setShowPasswordSetup(true)
     } catch (err: any) {
-      setGoogleError(err.message || 'Invalid or expired verification payload')
+      setGoogleError(err.message || 'Invalid or expired verification code')
     } finally {
       setGoogleLoading(false)
     }
@@ -261,9 +307,17 @@ export default function RegisterPage() {
   }
 
   const handleResendOtp = async () => {
+    if (resendCooldown > 0) return
+    if (resendAttempts >= 3) {
+      setGoogleError("Maximum resend attempts exceeded. Please try again later.")
+      return
+    }
     setGoogleError('')
     try {
-      await apiPost('/auth/send-otp', { email: googleEmail })
+      await apiPost('/auth/send-verification-otp', { email: googleEmail })
+      setResendCooldown(60)
+      setResendAttempts(a => a + 1)
+      setCountdown(300)
       alert('Verification code resent successfully!')
     } catch (err: any) {
       setGoogleError(err.message || 'Resend failed')
@@ -563,7 +617,7 @@ export default function RegisterPage() {
              ) : (
               <form onSubmit={handleGoogleOtpVerify}>
                 <p className="subtitle">
-                  We've sent a 6-digit OTP verification code to **{googleEmail}**. Please enter it below.
+                  We've sent a 6-digit OTP verification code to <strong>{googleEmail}</strong>. Please enter it below.
                 </p>
                 <div className="form-group">
                   <label htmlFor="googleOtpInput">6-Digit Verification Code</label>
@@ -585,12 +639,31 @@ export default function RegisterPage() {
                     autoFocus
                   />
                 </div>
+                
+                <div style={{ textAlign: 'center', margin: '15px 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                  {countdown > 0 ? (
+                    <span>Code expires in <strong style={{ color: 'var(--accent)' }}>{Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}</strong></span>
+                  ) : (
+                    <span style={{ color: 'var(--danger)', fontWeight: 'bold' }}>The verification code has expired. Please request a new code.</span>
+                  )}
+                </div>
+
                 <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-                  <button type="submit" className="btn" disabled={googleLoading}>
+                  <button type="submit" className="btn" disabled={googleLoading || countdown <= 0}>
                     {googleLoading ? 'Verifying...' : 'Verify & Register'}
                   </button>
-                  <button type="button" className="btn btn-secondary" onClick={handleResendOtp}>
-                    Resend Code
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary" 
+                    onClick={handleResendOtp}
+                    disabled={resendCooldown > 0 || resendAttempts >= 3 || googleLoading}
+                    style={{ minWidth: '110px' }}
+                  >
+                    {resendCooldown > 0 
+                      ? `Resend (${resendCooldown}s)` 
+                      : resendAttempts >= 3 
+                        ? 'Resend Locked' 
+                        : 'Resend Code'}
                   </button>
                   <button type="button" className="btn btn-secondary" onClick={() => setOtpSent(false)}>
                     Back

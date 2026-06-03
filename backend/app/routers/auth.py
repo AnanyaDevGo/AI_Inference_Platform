@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.user import User
+from app.models.otp import Otp
 from app.schemas.auth import (
     LoginRequest,
     RegisterRequest,
@@ -40,8 +41,6 @@ from app.services.otp_service import (
     store_otp,
     verify_otp,
     get_redis_client,
-    store_password_reset_otp,
-    verify_password_reset_otp,
 )
 from app.services.email_service import send_otp_verification_email
 from app.dependencies.auth import get_current_user, CurrentUser
@@ -164,7 +163,7 @@ async def register(
     try:
         existing = await get_user_by_email(db, req.email)
         if existing:
-            raise ValidationError("An account with this email already exists")
+            raise ValidationError("This email address is already registered.")
 
         is_new = False
         if req.org_name:
@@ -174,6 +173,7 @@ async def register(
 
         role = "org_admin" if is_new else "viewer"
 
+        # Normal email/password signup does NOT require OTP (verified and active immediately)
         user = User(
             org_id=org.id,
             name=req.name,
@@ -182,32 +182,26 @@ async def register(
             role=role,
             auth_provider="local",
             is_active=True,
-            is_verified=False,
+            is_verified=True,
             password_set=True,
         )
         db.add(user)
         await db.flush()
         await db.refresh(user)
 
-        code = await store_otp(email=req.email, name=req.name)
-        
-        from app.services.auth_service import create_verification_token
-        token_payload = {
-            "email": req.email,
-            "name": req.name,
-            "purpose": "local_registration"
-        }
-        verification_token = create_verification_token(token_payload)
-        
-        await send_otp_verification_email(req.email, code)
-        logger.info("user_registration_initiated_otp_dispatched", email=req.email, role=role, org=org.slug)
+        # Issue tokens directly
+        access_token = create_access_token(user)
+        refresh_token, jti = create_refresh_token(user)
+        await store_active_refresh_token(str(user.id), jti, 604800)
+        set_refresh_cookie(response, refresh_token)
+
+        logger.info("user_registration_success_direct", email=req.email, role=role, org=org.slug)
 
         return TokenResponse(
-            access_token="",
+            access_token=access_token,
             user_name=user.name,
             user_email=user.email,
-            requires_otp=True,
-            verification_token=verification_token,
+            requires_otp=False,
         )
     except ValidationError as e:
         logger.warning("user_registration_failed_validation", email=req.email, error=e.message)
@@ -228,7 +222,7 @@ async def login(
         
         # Check verification status
         if not user.is_verified:
-            raise ValidationError("This account is not verified. Please verify using Google sign-in.")
+            raise ValidationError("Your email address has not been verified yet.")
 
         # Update last login time
         user.last_login_at = datetime.now(timezone.utc)
@@ -251,9 +245,9 @@ async def login(
     except ValidationError as e:
         logger.warning("user_login_failed_validation", email=req.email, error=e.message)
         raise e
-    except InvalidCredentialsError as e:
+    except InvalidCredentialsError:
         logger.warning("user_login_failed_invalid_credentials", email=req.email)
-        raise e
+        raise ValidationError("Incorrect email or password.")
     except UnauthorizedError as e:
         logger.warning("user_login_failed_unauthorized", email=req.email, error=e.message)
         raise e
@@ -272,7 +266,7 @@ async def google_auth(
 ) -> TokenResponse:
     """
     Authenticate/Sign Up a user via Google OAuth ID token.
-    Immediately creates a user record in the DB if not existing, marked as unverified.
+    For Google Sign-in registration, OTP verification is required.
     """
     idinfo = await verify_google_id_token(req.id_token)
     email = idinfo["email"]
@@ -284,7 +278,7 @@ async def google_auth(
     if user:
         if not user.is_verified:
             # User exists in DB but is not verified. Resend OTP.
-            code = await store_otp(email=email, name=user.name)
+            code = await store_otp(db, email, "signup")
             
             from app.services.auth_service import create_verification_token
             token_payload = {
@@ -335,6 +329,7 @@ async def google_auth(
 
     role = "org_admin" if is_new else "viewer"
 
+    # Google Sign-in registration sets is_verified=False (requires OTP verification)
     user = User(
         org_id=org.id,
         name=name,
@@ -344,7 +339,7 @@ async def google_auth(
         profile_picture=picture,
         auth_provider="google",
         role=role,
-        is_active=True,
+        is_active=False,
         is_verified=False,
         password_set=False,
     )
@@ -352,7 +347,7 @@ async def google_auth(
     await db.flush()
     await db.refresh(user)
 
-    code = await store_otp(email=email, name=name)
+    code = await store_otp(db, email, "signup")
 
     from app.services.auth_service import create_verification_token
     token_payload = {
@@ -375,63 +370,64 @@ async def google_auth(
     )
 
 
-@router.post("/send-otp")
-async def send_otp(
+@router.post("/send-verification-otp")
+async def send_verification_otp(
     req: SendOtpRequest,
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Resends the 6-digit OTP verification code to the email.
+    Resends the 6-digit OTP verification code for Google signup.
     """
     user = await get_user_by_email(db, req.email)
     if not user:
-        raise ValidationError("No pending registration found for this email.")
+        raise ValidationError("No account found with this email address.")
         
     if user.is_verified:
-        raise ValidationError("This account is already verified.")
+        raise ValidationError("This email address is already registered.")
 
-    code = await store_otp(email=req.email, name=user.name)
+    code = await store_otp(db, req.email, "signup")
     await send_otp_verification_email(req.email, code)
     logger.info("otp_resend_triggered", email=req.email)
     return {"success": True, "message": "Verification code resent successfully."}
 
 
-@router.post("/verify-otp", response_model=TokenResponse)
-async def verify_otp_endpoint(
+@router.post("/verify-email-otp", response_model=TokenResponse)
+async def verify_email_otp(
     req: VerifyOtpRequest,
     response: Response,
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     """
-    Verifies 6-digit OTP, marks user verified in DB, and returns tokens.
+    Verifies 6-digit OTP for Google signup, activates user in DB, and returns tokens.
     """
     user = await get_user_by_email(db, req.email)
     if not user:
-        raise ValidationError("User not found.")
+        raise ValidationError("No account found with this email address.")
 
     if not req.code:
         raise ValidationError("Verification code is required.")
-    try:
-        otp_payload = await verify_otp(req.email, req.code)
-    except ValueError as e:
-        raise ValidationError(str(e))
         
-    if not otp_payload:
-        raise ValidationError("Invalid or expired verification code.")
+    try:
+        await verify_otp(db, req.email, "signup", req.code)
+    except ValidationError as e:
+        raise e
+    except Exception as e:
+        raise ValidationError(str(e))
 
     if req.verification_token:
         from app.services.auth_service import decode_token
         try:
             payload = decode_token(req.verification_token)
-            if payload.get("purpose") not in ("google_registration", "local_registration"):
-                raise ValidationError("Invalid verification token purpose")
+            if payload.get("purpose") != "google_registration":
+                raise ValidationError("Invalid verification token purpose.")
             if payload.get("email") != req.email:
-                raise ValidationError("Verification token email mismatch")
+                raise ValidationError("Verification token email mismatch.")
         except Exception as e:
             raise ValidationError(f"Invalid or expired verification token: {str(e)}")
 
-    # Mark user as verified
+    # Mark user as verified and active
     user.is_verified = True
+    user.is_active = True
     user.last_login_at = datetime.now(timezone.utc)
     await db.flush()
 
@@ -571,7 +567,8 @@ async def forgot_password(
     should_send = user is not None and user.is_verified
 
     if should_send:
-        code = await store_password_reset_otp(req.email)
+        # Generate forgot password OTP
+        code = await store_otp(db, req.email, "forgot_password")
         
         from app.services.email_service import send_password_reset_email
         await send_password_reset_email(req.email, code)
@@ -586,6 +583,33 @@ async def forgot_password(
         "message": "If an account exists for this email, a reset link has been sent.",
         "reset_token": reset_token,
     }
+
+
+@router.post("/verify-reset-otp")
+async def verify_reset_otp(
+    req: VerifyOtpRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Verify the password reset OTP code.
+    """
+    if not req.code:
+        raise ValidationError("Verification code is required.")
+
+    if req.verification_token:
+        from app.services.auth_service import decode_token
+        try:
+            payload = decode_token(req.verification_token)
+            if payload.get("purpose") != "password_reset":
+                raise ValidationError("Invalid reset token purpose.")
+            if payload.get("email") != req.email:
+                raise ValidationError("Reset token email mismatch.")
+        except Exception as e:
+            raise ValidationError(f"Invalid or expired reset token: {str(e)}")
+
+    await verify_otp(db, req.email, "forgot_password", req.code)
+    logger.info("password_reset_otp_verified", email=req.email)
+    return {"success": True, "message": "Verification code verified successfully."}
 
 
 @router.post("/reset-password")
@@ -610,27 +634,48 @@ async def reset_password(
         raise ValidationError(f"Invalid or expired reset token: {str(e)}")
 
     user = await get_user_by_email(db, req.email)
-    should_verify = user is not None and user.is_verified
+    valid_user = user is not None and user.is_verified
 
-    if should_verify:
-        if not req.code:
-            raise ValidationError("Verification code is required.")
-        try:
-            verified = await verify_password_reset_otp(req.email, req.code)
-        except ValueError as e:
-            raise ValidationError(str(e))
-        if not verified:
-            raise ValidationError("Invalid or expired verification code.")
+    if valid_user:
+        # Find latest OTP in DB for this email and purpose "forgot_password"
+        stmt = select(Otp).where(
+            Otp.email == req.email.strip().lower(),
+            Otp.purpose == "forgot_password"
+        ).order_by(Otp.created_at.desc()).limit(1)
+        res = await db.execute(stmt)
+        otp_record = res.scalar_one_or_none()
+
+        if not otp_record:
+            raise ValidationError("No password reset request found. Please try again.")
+
+        # If code was passed and it's not verified yet, verify it on the fly
+        if not otp_record.verified:
+            if not req.code:
+                raise ValidationError("Verification code is required.")
+            await verify_otp(db, req.email, "forgot_password", req.code)
+            await db.refresh(otp_record)
+
+        if not otp_record.verified:
+            raise ValidationError("Verification code has not been verified.")
+
+        if datetime.now(timezone.utc) > otp_record.expires_at:
+            raise ValidationError("The verification code has expired. Please request a new code.")
+
+        # Set new password
+        user.password_hash = hash_password(req.new_password)
+        user.password_set = True
+        
+        # Consume OTP record
+        await db.delete(otp_record)
+        
+        # Revoke all active user sessions/refresh tokens to force re-authentication!
+        await revoke_all_user_refresh_tokens(str(user.id))
+        await db.flush()
+        logger.info("password_reset_successful", email=req.email)
     else:
         # Silently succeed to prevent user enumeration
-        logger.info("password_reset_ignored_user_not_found_or_google_only", email=req.email)
-        return {"success": True, "message": "Password reset successfully!"}
+        logger.info("password_reset_ignored_invalid_user", email=req.email)
 
-    user.password_hash = hash_password(req.new_password)
-    user.password_set = True
-    await db.flush()
-
-    logger.info("password_reset_successful", email=req.email)
     return {"success": True, "message": "Password reset successfully!"}
 
 
