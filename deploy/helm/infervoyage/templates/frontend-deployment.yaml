@@ -25,6 +25,9 @@ spec:
         - name: frontend
           image: "{{ .Values.frontend.image }}"
           imagePullPolicy: {{ .Values.frontend.pullPolicy }}
+          env:
+            - name: API_HOST
+              value: "http://{{ include "infervoyage.api.fullname" . }}:8000"
           ports:
             - name: http
               containerPort: 80

@@ -7,13 +7,15 @@
     root * /srv
 
     route {
-        reverse_proxy /api/* http://api:8000
-        reverse_proxy /admin/* http://api:8000
-        reverse_proxy /auth/* http://api:8000
-        reverse_proxy /v1/* http://api:8000
-        reverse_proxy /health* http://api:8000
+        @api_paths {
+            path /api/* /admin/* /auth/* /v1/* /health* /docs* /openapi.json* /redoc*
+        }
+        reverse_proxy @api_paths {$API_HOST:http://api:8000} {
+            header_up X-Request-ID {uuid}
+        }
 
         try_files {path} /index.html
         file_server
     }
 }
+
