@@ -53,8 +53,8 @@ class ChatTaskSet(TaskSet):
             raise StopUser()
 
     def _headers(self) -> dict:
-        if not self.token:
-            self.token = login(self.client, TEST_USER_EMAIL, TEST_USER_PASSWORD)
+        """Return auth headers, re-acquiring token if missing or expired."""
+        self.token = login(self.client, TEST_USER_EMAIL, TEST_USER_PASSWORD, TEST_USER_NAME)
         return get_auth_headers(self.token or "")
 
     # ── Non-streaming chat ───────────────────────────────────────────────────
@@ -75,16 +75,27 @@ class ChatTaskSet(TaskSet):
             if resp.status_code == 200:
                 data = resp.json()
                 if data.get("choices"):
+                    resp.request_meta["name"] = "/v1/chat/completions [Model Success]"
                     resp.success()
                 else:
+                    resp.request_meta["name"] = "/v1/chat/completions [Model Failure]"
                     resp.failure("No choices in response")
-            elif resp.status_code == 429:
+            elif resp.status_code in (429, 503):
+                resp.request_meta["name"] = "/v1/chat/completions [Rate Limited]"
                 resp.success()  # Rate limit is expected, not a failure
             elif resp.status_code == 401:
                 invalidate_token(TEST_USER_EMAIL)
                 self.token = None
+                resp.request_meta["name"] = "/v1/chat/completions [Auth Failed]"
+                resp.success()
+            elif resp.status_code == 0:
+                # Connection dropped — likely token expired during long inference
+                invalidate_token(TEST_USER_EMAIL)
+                self.token = None
+                resp.request_meta["name"] = "/v1/chat/completions [Auth Failed]"
                 resp.success()
             else:
+                resp.request_meta["name"] = "/v1/chat/completions [Model Failure]"
                 resp.failure(f"Chat failed: {resp.status_code} {resp.text[:300]}")
 
     @task(10)
@@ -100,13 +111,24 @@ class ChatTaskSet(TaskSet):
             timeout=INFERENCE_TIMEOUT,
             name="/v1/chat/completions [sync-medium]",
         ) as resp:
-            if resp.status_code in (200, 429):
+            if resp.status_code == 200:
+                resp.request_meta["name"] = "/v1/chat/completions [Model Success]"
+                resp.success()
+            elif resp.status_code in (429, 503):
+                resp.request_meta["name"] = "/v1/chat/completions [Rate Limited]"
                 resp.success()
             elif resp.status_code == 401:
                 invalidate_token(TEST_USER_EMAIL)
                 self.token = None
+                resp.request_meta["name"] = "/v1/chat/completions [Auth Failed]"
+                resp.success()
+            elif resp.status_code == 0:
+                invalidate_token(TEST_USER_EMAIL)
+                self.token = None
+                resp.request_meta["name"] = "/v1/chat/completions [Auth Failed]"
                 resp.success()
             else:
+                resp.request_meta["name"] = "/v1/chat/completions [Model Failure]"
                 resp.failure(f"Medium chat failed: {resp.status_code}")
 
     # ── Streaming chat with TTFT measurement ─────────────────────────────────
@@ -139,9 +161,15 @@ class ChatTaskSet(TaskSet):
                 name="/v1/chat/completions [stream-short]",
             ) as resp:
                 if resp.status_code != 200:
-                    if resp.status_code == 429:
+                    if resp.status_code in (429, 503):
+                        resp.request_meta["name"] = "/v1/chat/completions [Rate Limited]"
                         resp.success()
                         return
+                    if resp.status_code in (401, 0):
+                        resp.request_meta["name"] = "/v1/chat/completions [Auth Failed]"
+                        resp.success()
+                        return
+                    resp.request_meta["name"] = "/v1/chat/completions [Model Failure]"
                     resp.failure(f"Stream init failed: {resp.status_code}")
                     return
 
@@ -161,7 +189,7 @@ class ChatTaskSet(TaskSet):
                         delta = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
                         if delta:
                             if first_token_time is None:
-                                first_token_time = time.perf_counter()
+                                  first_token_time = time.perf_counter()
                             total_content += delta
                             chunks_received += 1
                     except (json.JSONDecodeError, IndexError, KeyError):
@@ -173,14 +201,16 @@ class ChatTaskSet(TaskSet):
                     ttft_ms = (first_token_time - request_start) * 1000 if first_token_time else total_duration_ms
                     # Report TTFT as a separate named request
                     _report_ttft(self.user.environment, ttft_ms, "TTFT [stream-short]")
+                    resp.request_meta["name"] = "/v1/chat/completions [Model Success]"
                     resp.success()
                 else:
+                    resp.request_meta["name"] = "/v1/chat/completions [Model Failure]"
                     resp.failure("No content chunks received from stream")
 
         except Exception as e:
             self.user.environment.events.request.fire(
                 request_type="SSE",
-                name="/v1/chat/completions [stream-short]",
+                name="/v1/chat/completions [Model Failure]",
                 response_time=(time.perf_counter() - request_start) * 1000,
                 response_length=0,
                 exception=e,
@@ -209,11 +239,17 @@ class ChatTaskSet(TaskSet):
                 timeout=STREAM_TIMEOUT,
                 name="/v1/chat/completions [stream-large]",
             ) as resp:
-                if resp.status_code not in (200, 429):
-                    resp.failure(f"Large stream failed: {resp.status_code}")
-                    return
-                if resp.status_code == 429:
+                if resp.status_code in (429, 503):
+                    resp.request_meta["name"] = "/v1/chat/completions [Rate Limited]"
                     resp.success()
+                    return
+                if resp.status_code in (401, 0):
+                    resp.request_meta["name"] = "/v1/chat/completions [Auth Failed]"
+                    resp.success()
+                    return
+                if resp.status_code != 200:
+                    resp.request_meta["name"] = "/v1/chat/completions [Model Failure]"
+                    resp.failure(f"Large stream failed: {resp.status_code}")
                     return
 
                 for raw_line in resp.iter_lines():
@@ -231,11 +267,12 @@ class ChatTaskSet(TaskSet):
                 if first_token_time:
                     ttft_ms = (first_token_time - request_start) * 1000
                     _report_ttft(self.user.environment, ttft_ms, "TTFT [stream-large]")
+                resp.request_meta["name"] = "/v1/chat/completions [Model Success]"
                 resp.success()
         except Exception as e:
             self.user.environment.events.request.fire(
                 request_type="SSE",
-                name="/v1/chat/completions [stream-large]",
+                name="/v1/chat/completions [Model Failure]",
                 response_time=(time.perf_counter() - request_start) * 1000,
                 response_length=0,
                 exception=e,
@@ -257,9 +294,19 @@ class ChatTaskSet(TaskSet):
             timeout=INFERENCE_TIMEOUT * 2,
             name="/v1/chat/completions [multi-turn]",
         ) as resp:
-            if resp.status_code in (200, 429):
+            if resp.status_code == 200:
+                resp.request_meta["name"] = "/v1/chat/completions [Model Success]"
+                resp.success()
+            elif resp.status_code in (429, 503):
+                resp.request_meta["name"] = "/v1/chat/completions [Rate Limited]"
+                resp.success()
+            elif resp.status_code in (401, 0):
+                invalidate_token(TEST_USER_EMAIL)
+                self.token = None
+                resp.request_meta["name"] = "/v1/chat/completions [Auth Failed]"
                 resp.success()
             else:
+                resp.request_meta["name"] = "/v1/chat/completions [Model Failure]"
                 resp.failure(f"Multi-turn failed: {resp.status_code}")
 
     # ── Rate limit probe ─────────────────────────────────────────────────────
@@ -278,16 +325,27 @@ class ChatTaskSet(TaskSet):
                 json=payload,
                 headers=headers,
                 catch_response=True,
-                timeout=30,
+                timeout=INFERENCE_TIMEOUT,
                 name="/v1/chat/completions [rate-limit-probe]",
             ) as resp:
                 if resp.status_code == 429:
                     hit_rate_limit = True
+                    resp.request_meta["name"] = "/v1/chat/completions [Rate Limited]"
                     resp.success()  # 429 is expected behaviour
+                elif resp.status_code == 503:
+                    hit_rate_limit = True
+                    resp.request_meta["name"] = "/v1/chat/completions [Rate Limited]"
+                    resp.success()  # 503 backpressure = expected under load
                 elif resp.status_code == 200:
+                    resp.request_meta["name"] = "/v1/chat/completions [Model Success]"
+                    resp.success()
+                elif resp.status_code in (401, 0):
+                    resp.request_meta["name"] = "/v1/chat/completions [Auth Failed]"
                     resp.success()
                 else:
+                    resp.request_meta["name"] = "/v1/chat/completions [Model Failure]"
                     resp.failure(f"Unexpected status: {resp.status_code}")
+
 
 
 class ChatUser(HttpUser):

@@ -17,7 +17,7 @@ _token_cache: dict[str, dict] = {}
 _lock = threading.Lock()
 
 
-def login(client, email: str, password: str, name: str = "Load Test User") -> Optional[str]:
+def login(client, email: str, password: str, name: str = "Load Test User", retry_on_fail: bool = True) -> Optional[str]:
     """
     Log in and return the access_token. Caches token per email.
     Returns None on failure.
@@ -42,16 +42,21 @@ def login(client, email: str, password: str, name: str = "Load Test User") -> Op
                         "access_token": token,
                         "expires_at": time.time() + 3500,  # ~1 hour
                     }
+                resp.request_meta["name"] = "/auth/login [Success]"
+                resp.success()
                 return token
+            resp.request_meta["name"] = "/auth/login [Failure]"
             resp.failure(f"No access_token in response: {resp.text[:200]}")
             return None
-        elif resp.status_code == 404:
+        elif resp.status_code in (400, 401, 404) and retry_on_fail:
             # User doesn't exist — attempt registration then login
+            resp.request_meta["name"] = "/auth/login [Setup - Needs Register]"
             resp.success()
             if _register_user(client, email, password, name):
-                return login(client, email, password, name)
+                return login(client, email, password, name, retry_on_fail=False)
             return None
         else:
+            resp.request_meta["name"] = "/auth/login [Failure]"
             resp.failure(f"Login failed: {resp.status_code} {resp.text[:200]}")
             return None
 
@@ -62,7 +67,7 @@ def _register_user(client, email: str, password: str, name: str) -> bool:
         "/auth/register",
         json={"email": email, "password": password, "name": name},
         catch_response=True,
-        name="/auth/register [setup]",
+        name="/auth/register [Setup Success]",
     ) as resp:
         if resp.status_code in (200, 201):
             resp.success()
@@ -71,6 +76,7 @@ def _register_user(client, email: str, password: str, name: str) -> bool:
         if resp.status_code == 400:
             resp.success()
             return True
+        resp.request_meta["name"] = "/auth/register [Setup Failure]"
         resp.failure(f"Registration failed: {resp.status_code}")
         return False
 

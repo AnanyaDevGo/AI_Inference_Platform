@@ -21,8 +21,10 @@ def get_engine():
         _engine = create_async_engine(
             settings.DATABASE_URL,
             echo=False,
-            pool_size=5,
-            max_overflow=5,
+            pool_size=15,        # Increased for load test concurrency
+            max_overflow=10,     # Extra burst capacity
+            pool_pre_ping=True,  # Discard stale/cancelled connections automatically
+            pool_recycle=300,    # Recycle connections every 5 min to avoid stale state
         )
     return _engine
 

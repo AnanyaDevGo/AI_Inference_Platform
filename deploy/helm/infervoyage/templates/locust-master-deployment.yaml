@@ -34,7 +34,7 @@ spec:
             - name: LOCUST_HOST
               value: "http://{{ include "infervoyage.api.fullname" . }}:8000"
             - name: TEST_USER_EMAIL
-              value: "loadtest@infervoyage.local"
+              value: "loadtest@infervoyage.com"
             - name: TEST_USER_PASSWORD
               value: "LoadTest@12345"
             - name: MODEL_NAME

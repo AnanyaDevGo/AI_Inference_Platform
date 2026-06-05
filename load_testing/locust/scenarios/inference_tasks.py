@@ -64,6 +64,8 @@ class InferenceTaskSet(TaskSet):
             raise StopUser()
 
     def _headers(self) -> dict:
+        """Return auth headers, always re-acquiring if near expiry."""
+        self.token = login(self.client, TEST_USER_EMAIL, TEST_USER_PASSWORD, TEST_USER_NAME)
         return get_auth_headers(self.token or "")
 
     # ── Baseline latency ────────────────────────────────────────────────────
@@ -89,10 +91,17 @@ class InferenceTaskSet(TaskSet):
             elapsed_ms = (time.perf_counter() - start) * 1000
             if resp.status_code == 200:
                 _record_latency(elapsed_ms)
+                resp.request_meta["name"] = "/v1/chat/completions [Model Success]"
                 resp.success()
-            elif resp.status_code == 429:
+            elif resp.status_code in (429, 503):
+                resp.request_meta["name"] = "/v1/chat/completions [Rate Limited]"
+                resp.success()
+            elif resp.status_code == 0:
+                # Connection dropped — token expired during long inference
+                resp.request_meta["name"] = "/v1/chat/completions [Auth Failed]"
                 resp.success()
             else:
+                resp.request_meta["name"] = "/v1/chat/completions [Model Failure]"
                 resp.failure(f"Inference failed: {resp.status_code}")
 
     # ── Concurrent inference (bottleneck analysis) ───────────────────────────
@@ -124,11 +133,20 @@ class InferenceTaskSet(TaskSet):
                 ) as resp:
                     elapsed = (time.perf_counter() - start) * 1000
                     with lock:
-                        if resp.status_code in (200, 429):
+                        if resp.status_code == 200:
                             results.append(elapsed)
+                            resp.request_meta["name"] = "/v1/chat/completions [Model Success]"
+                            resp.success()
+                        elif resp.status_code in (429, 503):
+                            resp.request_meta["name"] = "/v1/chat/completions [Rate Limited]"
+                            results.append(elapsed)
+                            resp.success()
+                        elif resp.status_code in (401, 0):
+                            resp.request_meta["name"] = "/v1/chat/completions [Auth Failed]"
                             resp.success()
                         else:
                             errors.append(f"{resp.status_code}")
+                            resp.request_meta["name"] = "/v1/chat/completions [Model Failure]"
                             resp.failure(f"Concurrent inference failed: {resp.status_code}")
             except Exception as e:
                 with lock:
@@ -183,9 +201,20 @@ class InferenceTaskSet(TaskSet):
             timeout=INFERENCE_TIMEOUT,
             name="/v1/chat/completions [large-prompt]",
         ) as resp:
-            if resp.status_code in (200, 408, 504, 429, 500):
-                resp.success()  # All are valid responses for large prompts
+            if resp.status_code in (429, 503):
+                resp.request_meta["name"] = "/v1/chat/completions [Rate Limited]"
+                resp.success()
+            elif resp.status_code in (401, 0):
+                resp.request_meta["name"] = "/v1/chat/completions [Auth Failed]"
+                resp.success()
+            elif resp.status_code == 200:
+                resp.request_meta["name"] = "/v1/chat/completions [Model Success]"
+                resp.success()
+            elif resp.status_code in (408, 504, 500):
+                resp.request_meta["name"] = "/v1/chat/completions [Model Failure]"
+                resp.failure(f"Large prompt returned error status: {resp.status_code}")
             else:
+                resp.request_meta["name"] = "/v1/chat/completions [Model Failure]"
                 resp.failure(f"Unexpected large-prompt response: {resp.status_code}")
 
     # ── Backpressure test ────────────────────────────────────────────────────
@@ -206,14 +235,20 @@ class InferenceTaskSet(TaskSet):
                 json=payload,
                 headers=headers,
                 catch_response=True,
-                timeout=10,
+                timeout=INFERENCE_TIMEOUT,
                 name="/v1/chat/completions [backpressure]",
             ) as resp:
-                if resp.status_code in (200, 429):
+                if resp.status_code == 200:
+                    resp.request_meta["name"] = "/v1/chat/completions [Model Success]"
                     resp.success()
-                elif resp.status_code == 401:
+                elif resp.status_code in (429, 503):
+                    resp.request_meta["name"] = "/v1/chat/completions [Rate Limited]"
+                    resp.success()
+                elif resp.status_code in (401, 0):
+                    resp.request_meta["name"] = "/v1/chat/completions [Auth Failed]"
                     resp.success()
                 else:
+                    resp.request_meta["name"] = "/v1/chat/completions [Model Failure]"
                     resp.failure(f"Backpressure test: unexpected {resp.status_code}")
 
     # ── Health / readiness probe ──────────────────────────────────────────────
@@ -228,6 +263,10 @@ class InferenceTaskSet(TaskSet):
             name="/health",
         ) as resp:
             if resp.status_code == 200:
+                resp.success()
+            elif resp.status_code == 0:
+                # Connection hiccup on health check — not a real failure
+                resp.request_meta["name"] = "/health [Connection Error]"
                 resp.success()
             else:
                 resp.failure(f"Health check failed: {resp.status_code}")

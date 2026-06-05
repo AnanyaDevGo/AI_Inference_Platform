@@ -11,7 +11,7 @@
         reverse_proxy /admin/* http://api:8000
         reverse_proxy /auth/* http://api:8000
         reverse_proxy /v1/* http://api:8000
-        reverse_proxy /health/* http://api:8000
+        reverse_proxy /health* http://api:8000
 
         try_files {path} /index.html
         file_server

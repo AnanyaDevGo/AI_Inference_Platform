@@ -196,6 +196,8 @@ async def register(
         set_refresh_cookie(response, refresh_token)
 
         logger.info("user_registration_success_direct", email=req.email, role=role, org=org.slug)
+        from app.observability.metrics import USER_REGISTRATIONS_TOTAL
+        USER_REGISTRATIONS_TOTAL.inc()
 
         return TokenResponse(
             access_token=access_token,
@@ -235,6 +237,8 @@ async def login(
         set_refresh_cookie(response, refresh_token)
 
         logger.info("user_login_success", email=req.email)
+        from app.observability.metrics import USER_LOGINS_TOTAL
+        USER_LOGINS_TOTAL.labels(status="success").inc()
 
         return TokenResponse(
             access_token=access_token,
@@ -244,15 +248,23 @@ async def login(
         )
     except ValidationError as e:
         logger.warning("user_login_failed_validation", email=req.email, error=e.message)
+        from app.observability.metrics import USER_LOGINS_TOTAL
+        USER_LOGINS_TOTAL.labels(status="failure").inc()
         raise e
     except InvalidCredentialsError:
         logger.warning("user_login_failed_invalid_credentials", email=req.email)
+        from app.observability.metrics import USER_LOGINS_TOTAL
+        USER_LOGINS_TOTAL.labels(status="failure").inc()
         raise ValidationError("Incorrect email or password.")
     except UnauthorizedError as e:
         logger.warning("user_login_failed_unauthorized", email=req.email, error=e.message)
+        from app.observability.metrics import USER_LOGINS_TOTAL
+        USER_LOGINS_TOTAL.labels(status="failure").inc()
         raise e
     except Exception as e:
         logger.error("user_login_failed_unexpected", email=req.email, error=str(e))
+        from app.observability.metrics import USER_LOGINS_TOTAL
+        USER_LOGINS_TOTAL.labels(status="failure").inc()
         raise e
 
 

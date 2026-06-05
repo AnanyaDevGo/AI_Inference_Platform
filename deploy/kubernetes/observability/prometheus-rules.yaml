@@ -1,0 +1,112 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: infervoyage-alert-rules
+  namespace: infervoyage-dev
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: infervoyage-critical-alerts
+      rules:
+        # 1. Backend Down
+        - alert: BackendDown
+          expr: up{job="infervoyage-api"} == 0 or count(up{job="infervoyage-api"}) == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Backend API is completely down"
+            description: "No FastAPI backend replicas are running or responding to scrapes."
+
+        # 2. Database Down
+        - alert: DatabaseDown
+          expr: db_up == 0
+          for: 30s
+          labels:
+            severity: critical
+          annotations:
+            summary: "PostgreSQL Database is down"
+            description: "The backend is unable to connect to the PostgreSQL database."
+
+        # 3. Redis Down
+        - alert: RedisDown
+          expr: redis_up == 0
+          for: 30s
+          labels:
+            severity: critical
+          annotations:
+            summary: "Redis Cache is down"
+            description: "The backend is unable to connect to the Redis server."
+
+        # 4. Ollama Down
+        - alert: OllamaDown
+          expr: ollama_up == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Ollama Inference Engine is down"
+            description: "The Ollama server is completely unreachable from the backend API."
+
+        # 5. High Error Rates
+        - alert: HighErrorRate5xx
+          expr: sum(rate(http_requests_total{status=~"5.."}[2m])) / sum(rate(http_requests_total[2m])) * 100 > 5
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Critical API Error Rate"
+            description: "The 5xx error rate has exceeded 5% over the last 2 minutes."
+
+    - name: infervoyage-warning-alerts
+      rules:
+        # 1. High API Latency
+        - alert: HighAPILatency
+          expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 2
+          for: 3m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High API Latency Warning"
+            description: "P95 API response times are above 2 seconds (currently {{ $value }}s)."
+
+        # 2. High Inference Duration
+        - alert: HighInferenceTime
+          expr: histogram_quantile(0.95, sum(rate(inference_duration_seconds_bucket[5m])) by (le)) > 45
+          for: 3m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High Inference Duration Warning"
+            description: "P95 inference completion times are exceeding 45 seconds (currently {{ $value }}s)."
+
+        # 3. High CPU Usage
+        - alert: PodHighCPUUsage
+          expr: sum(rate(container_cpu_usage_seconds_total{container!=""}[5m])) by (pod) / sum(container_spec_cpu_quota{container!=""} / container_spec_cpu_period{container!=""}) by (pod) * 100 > 85
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High CPU Usage in Pod"
+            description: "CPU usage inside Pod {{ $labels.pod }} is exceeding 85% of its configured limit."
+
+        # 4. High Memory Usage
+        - alert: PodHighMemoryUsage
+          expr: container_memory_working_set_bytes{container!=""} / container_spec_memory_limit_bytes{container!=""} * 100 > 85
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High Memory Usage in Pod"
+            description: "Memory usage inside Pod {{ $labels.pod }} is exceeding 85% of its configured limit."
+
+        # 5. Database Connection Pool Warning
+        - alert: DatabasePoolStrained
+          expr: (db_pool_checked_out / db_pool_size) * 100 > 80
+          for: 3m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Postgres Connection Pool Strained"
+            description: "SQLAlchemy connection pool is over 80% checked out (currently {{ $value }}%)."

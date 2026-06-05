@@ -16,6 +16,9 @@ from app.observability.metrics import (
     INFERENCE_REQUESTS_TOTAL,
     INFERENCE_TOKENS_TOTAL,
     INFERENCE_TTFT_SECONDS,
+    INFERENCE_CONCURRENT_REQUESTS,
+    INFERENCE_QUEUE_LENGTH,
+    RESPONSE_SIZE_BYTES,
 )
 from app.schemas.inference import (
     ChatCompletionChunk,
@@ -81,18 +84,25 @@ def get_active_inferences() -> int:
     return _active_inferences
 
 @asynccontextmanager
-async def _inference_slot():
+async def _inference_slot(model: str):
     global _active_inferences
     sem = _get_semaphore()
+    
+    # Update queue depth
+    queue_len = len(sem._waiters) if sem._waiters else 0
+    INFERENCE_QUEUE_LENGTH.labels(model=model).set(queue_len)
+    
     if sem.locked():
         raise InferenceUnavailableError("Server too busy: maximum concurrent inferences reached.")
     
     await sem.acquire()
     _active_inferences += 1
+    INFERENCE_CONCURRENT_REQUESTS.labels(model=model).inc()
     try:
         yield
     finally:
         _active_inferences -= 1
+        INFERENCE_CONCURRENT_REQUESTS.labels(model=model).dec()
         sem.release()
 
 
@@ -117,7 +127,7 @@ async def complete(
     )
 
     try:
-        async with _inference_slot():
+        async with _inference_slot(req.model):
             async with _get_client() as client:
                 try:
                     if settings.INFERENCE_ENGINE == "openai_compatible":
@@ -165,6 +175,8 @@ async def complete(
             _record_metrics(
                 org_id, req.model, "success", prompt_tokens, completion_tokens, start
             )
+            total_content = "".join([c["message"]["content"] for c in choices_data])
+            RESPONSE_SIZE_BYTES.labels(handler="/v1/chat/completions").observe(len(total_content.encode("utf-8")))
 
             logger.info(
                 "inference_complete",
@@ -194,6 +206,7 @@ async def complete(
             _record_metrics(
                 org_id, req.model, "success", prompt_tokens, completion_tokens, start
             )
+            RESPONSE_SIZE_BYTES.labels(handler="/v1/chat/completions").observe(len(content.encode("utf-8")))
 
             logger.info(
                 "inference_complete",
@@ -250,6 +263,7 @@ async def stream_complete(
     ttft_ms: int | None = None
     prompt_tokens = 0
     completion_tokens = 0
+    full_content_chunks = []
 
     logger.info(
         "inference_stream_start",
@@ -260,7 +274,7 @@ async def stream_complete(
     )
 
     try:
-        async with _inference_slot():
+        async with _inference_slot(req.model):
             async with _get_client() as client:
                 try:
                     if settings.INFERENCE_ENGINE == "openai_compatible":
@@ -306,6 +320,7 @@ async def stream_complete(
 
                                 if content:
                                     completion_tokens += 1
+                                    full_content_chunks.append(content)
 
                                 # Measure TTFT on first content-bearing chunk
                                 if first_token and content:
@@ -371,6 +386,7 @@ async def stream_complete(
 
                                 if content:
                                     completion_tokens += 1
+                                    full_content_chunks.append(content)
 
                                 # Measure TTFT on first content-bearing chunk
                                 if first_token and content:
@@ -423,6 +439,8 @@ async def stream_complete(
         _record_metrics(
             org_id, req.model, "success", prompt_tokens, completion_tokens, start
         )
+        full_content = "".join(full_content_chunks)
+        RESPONSE_SIZE_BYTES.labels(handler="/v1/chat/completions").observe(len(full_content.encode("utf-8")))
         logger.info(
             "inference_stream_complete",
             model=req.model,

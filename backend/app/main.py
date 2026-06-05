@@ -35,6 +35,9 @@ async def pull_default_models():
     from app.services.inference_service import check_ollama_health, _get_client
     
     settings = get_settings()
+    if not settings.AUTO_PULL_MODELS:
+        logger.info("skipping_model_pull_due_to_configuration")
+        return
     if settings.INFERENCE_ENGINE == "openai_compatible":
         logger.info("skipping_model_pull_for_openai_compatible_engine")
         return
@@ -171,7 +174,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         )
 
     import asyncio
+    from app.observability.metrics import collect_periodic_metrics
     asyncio.create_task(pull_default_models())
+    asyncio.create_task(collect_periodic_metrics())
 
     yield
 

@@ -37,6 +37,14 @@ class TenantTaskSet(TaskSet):
             raise StopUser()
 
     def _headers(self) -> dict:
+        """Return auth headers, always re-acquiring a fresh token."""
+        if self.tenant_config:
+            self.token = login(
+                self.client,
+                self.tenant_config["email"],
+                self.tenant_config["password"],
+                f"Tenant User {self.tenant_config['slug']}",
+            )
         return get_auth_headers(self.token or "")
 
     @task(10)
@@ -52,12 +60,22 @@ class TenantTaskSet(TaskSet):
             timeout=INFERENCE_TIMEOUT,
             name="/v1/chat/completions [tenant]",
         ) as resp:
-            if resp.status_code in (200, 429):
+            if resp.status_code == 200:
+                resp.request_meta["name"] = "/v1/chat/completions [Model Success]"
+                resp.success()
+            elif resp.status_code == 429:
+                resp.request_meta["name"] = "/v1/chat/completions [Rate Limited]"
                 resp.success()
             elif resp.status_code == 401:
                 self.token = None
+                resp.request_meta["name"] = "/v1/chat/completions [Auth Failed]"
+                resp.success()
+            elif resp.status_code == 0:
+                self.token = None
+                resp.request_meta["name"] = "/v1/chat/completions [Auth Failed]"
                 resp.success()
             else:
+                resp.request_meta["name"] = "/v1/chat/completions [Model Failure]"
                 resp.failure(f"Tenant chat failed: {resp.status_code}")
 
     @task(3)
@@ -75,7 +93,7 @@ class TenantTaskSet(TaskSet):
         ) as resp:
             if resp.status_code in (200, 403):
                 resp.success()
-            elif resp.status_code == 401:
+            elif resp.status_code in (401, 0):
                 self.token = None
                 resp.success()
             else:

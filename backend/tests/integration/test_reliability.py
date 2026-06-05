@@ -56,6 +56,11 @@ async def test_concurrency_limit(
 
     monkeypatch.setattr(inference_service, "_get_client", MockAsyncClient)
 
+    import app.routers.inference as inference_router
+    async def mock_check_rate_limit(*args, **kwargs):
+        return True, 0
+    monkeypatch.setattr(inference_router, "check_rate_limit", mock_check_rate_limit)
+
     headers = {"Authorization": f"Bearer {token}"}
     payload = {
         "model": "gemma2:2b",

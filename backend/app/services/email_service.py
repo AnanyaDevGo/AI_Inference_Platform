@@ -275,7 +275,11 @@ Subject: {subject}
             body_text=body_text,
             body_html=body_html,
         )
+        from app.observability.metrics import EMAILS_SENT_TOTAL
+        EMAILS_SENT_TOTAL.labels(status="success", purpose="otp_verification").inc()
     except Exception as e:
+        from app.observability.metrics import EMAILS_SENT_TOTAL
+        EMAILS_SENT_TOTAL.labels(status="failure", purpose="otp_verification").inc()
         logger.error("email_delivery_failed_falling_back_to_console", error=str(e), email=email, code=code)
         fallback_provider = ConsoleEmailProvider()
         await fallback_provider.send_email(
@@ -353,7 +357,11 @@ Subject: {subject}
             body_text=body_text,
             body_html=body_html,
         )
+        from app.observability.metrics import EMAILS_SENT_TOTAL
+        EMAILS_SENT_TOTAL.labels(status="success", purpose="password_reset").inc()
     except Exception as e:
+        from app.observability.metrics import EMAILS_SENT_TOTAL
+        EMAILS_SENT_TOTAL.labels(status="failure", purpose="password_reset").inc()
         logger.error("password_reset_email_delivery_failed_falling_back_to_console", error=str(e), email=email, code=code)
         fallback_provider = ConsoleEmailProvider()
         await fallback_provider.send_email(

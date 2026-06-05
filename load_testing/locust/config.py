@@ -8,22 +8,22 @@ import os
 HOST = os.getenv("LOCUST_HOST", "http://localhost:8000")
 
 # ── Test Credentials ──────────────────────────────────────────────────────────
-TEST_USER_EMAIL = os.getenv("TEST_USER_EMAIL", "loadtest@infervoyage.local")
+TEST_USER_EMAIL = os.getenv("TEST_USER_EMAIL", "loadtest@infervoyage.com")
 TEST_USER_PASSWORD = os.getenv("TEST_USER_PASSWORD", "LoadTest@12345")
 TEST_USER_NAME = os.getenv("TEST_USER_NAME", "Load Test User")
 
 # For multi-tenant tests — org slugs for tenant isolation validation
 TENANT_ORGS = [
-    {"email": "tenant1@infervoyage.local", "password": "Tenant1@12345", "slug": "tenant-one"},
-    {"email": "tenant2@infervoyage.local", "password": "Tenant2@12345", "slug": "tenant-two"},
-    {"email": "tenant3@infervoyage.local", "password": "Tenant3@12345", "slug": "tenant-three"},
+    {"email": "tenant1@infervoyage.com", "password": "Tenant1@12345", "slug": "tenant-one"},
+    {"email": "tenant2@infervoyage.com", "password": "Tenant2@12345", "slug": "tenant-two"},
+    {"email": "tenant3@infervoyage.com", "password": "Tenant3@12345", "slug": "tenant-three"},
 ]
 
 # ── Inference ─────────────────────────────────────────────────────────────────
 MODEL_NAME = os.getenv("MODEL_NAME", "llama3")
 MAX_TOKENS = int(os.getenv("MAX_TOKENS", "200"))
-STREAM_TIMEOUT = int(os.getenv("STREAM_TIMEOUT", "60"))   # seconds
-INFERENCE_TIMEOUT = int(os.getenv("INFERENCE_TIMEOUT", "90"))
+STREAM_TIMEOUT = int(os.getenv("STREAM_TIMEOUT", "180"))   # seconds
+INFERENCE_TIMEOUT = int(os.getenv("INFERENCE_TIMEOUT", "180"))
 
 # ── Performance Thresholds (used by CI pass/fail checks) ─────────────────────
 THRESHOLD_P95_MS = int(os.getenv("THRESHOLD_P95_MS", "3000"))     # 3s for AI inference

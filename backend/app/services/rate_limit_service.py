@@ -103,6 +103,9 @@ async def check_rate_limit(
 
         allowed = int(result[0]) == 1
         retry_after = int(result[1])
+        if not allowed:
+            from app.observability.metrics import RATE_LIMIT_REJECTIONS_TOTAL
+            RATE_LIMIT_REJECTIONS_TOTAL.labels(org_id=org_id).inc()
         return allowed, retry_after
 
     except Exception:

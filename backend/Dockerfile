@@ -17,6 +17,8 @@ RUN pip install --no-cache-dir --upgrade pip \
 # ── Runtime stage ─────────────────────────────────────────────────────────────
 FROM python:3.12-slim AS runtime
 
+RUN pip install --no-cache-dir --upgrade pip
+
 # Non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 

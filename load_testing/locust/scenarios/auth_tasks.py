@@ -46,12 +46,16 @@ class AuthTaskSet(TaskSet):
             if resp.status_code == 200:
                 data = resp.json()
                 if "access_token" not in data:
+                    resp.request_meta["name"] = "/auth/login [Failure]"
                     resp.failure("Missing access_token in response")
                 else:
+                    resp.request_meta["name"] = "/auth/login [Success]"
                     resp.success()
             elif resp.status_code == 401:
+                resp.request_meta["name"] = "/auth/login [Failure]"
                 resp.failure("Invalid credentials")
             else:
+                resp.request_meta["name"] = "/auth/login [Failure]"
                 resp.failure(f"Unexpected status: {resp.status_code}")
 
     @task(2)

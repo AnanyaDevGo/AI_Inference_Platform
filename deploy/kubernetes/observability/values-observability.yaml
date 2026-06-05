@@ -1,0 +1,107 @@
+# Helm values for kube-prometheus-stack
+# Custom overrides for the InferVoyage AI Inference Platform
+
+# ── Prometheus Operator Configuration ──────────────────────────────────────────
+prometheusOperator:
+  enabled: true
+
+# ── Prometheus Server Configuration ───────────────────────────────────────────
+prometheus:
+  enabled: true
+  prometheusSpec:
+    # Disable label selectors so Prometheus Operator auto-scrapes ALL ServiceMonitors
+    # and PrometheusRules across all namespaces
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector: {}
+    ruleSelectorNilUsesHelmValues: false
+    ruleSelector: {}
+    
+    # Scrape intervals
+    scrapeInterval: "15s"
+    evaluationInterval: "15s"
+
+    # Resource constraints to prevent OOM
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+# ── Grafana Configuration ──────────────────────────────────────────────────────
+grafana:
+  enabled: true
+  
+  # Resource constraints to prevent OOM
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+  # Dashboard auto-provisioning via sidecar
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: ALL
+    datasources:
+      enabled: true
+      searchNamespace: ALL
+
+  # Ingress routing for Grafana access
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/enable-cors: "true"
+    hosts:
+      - grafana.infervoyage.local
+    path: /
+    tls:
+      - secretName: infervoyage-tls-cert
+        hosts:
+          - grafana.infervoyage.local
+
+  # Enable dashboard provisioning configurations
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'InferVoyage'
+          orgId: 1
+          folder: 'InferVoyage'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/infervoyage
+
+# ── Exporter Configurations ────────────────────────────────────────────────────
+nodeExporter:
+  enabled: true
+
+kubeStateMetrics:
+  enabled: true
+
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+      receiver: 'null'

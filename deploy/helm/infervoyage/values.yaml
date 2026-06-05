@@ -55,28 +55,29 @@ ollama:
       "nvidia.com/gpu": "1"
   resources:
     requests:
-      cpu: "1.0"
-      memory: 2Gi
+      cpu: "200m"
+      memory: 512Mi
     limits:
-      cpu: "4.0"
-      memory: 4Gi
+      cpu: "1.0"
+      memory: 1Gi
   autoscaling:
-    enabled: true
+    enabled: false
     minReplicas: 1
     maxReplicas: 4
     targetCPUUtilizationPercentage: 80
 
 # ── FastAPI Backend Config ────────────────────────────────────────────────────
 api:
-  image: "infervoyage-api:latest"
-  pullPolicy: "IfNotPresent"
-  replicas: 2
+  image: "docker.io/library/infervoyage-api:latest"
+  pullPolicy: "Never"
+  replicas: 1
   secretKey: "secretkey12345678901234567890123" # Replace with secure key in values-prod.yaml
-  modelName: "llama3"
+  modelName: "gemma2:2b"
+  autoPullModels: false
   mail:
     server: "mailpit"
     port: "1025"
-    from: "noreply@infervoyage.local"
+    from: "noreply@infervoyage.com"
     user: ""
     password: ""
     resendApiKey: ""
@@ -88,16 +89,16 @@ api:
       cpu: 500m
       memory: 512Mi
   autoscaling:
-    enabled: true
+    enabled: false
     minReplicas: 2
     maxReplicas: 8
     targetCPUUtilizationPercentage: 75
 
 # ── React Frontend Config ─────────────────────────────────────────────────────
 frontend:
-  image: "infervoyage-frontend:latest"
-  pullPolicy: "IfNotPresent"
-  replicas: 2
+  image: "docker.io/library/infervoyage-frontend:latest"
+  pullPolicy: "Never"
+  replicas: 1
   resources:
     requests:
       cpu: 50m
@@ -124,8 +125,8 @@ ingress:
 locust:
   enabled: true
   master:
-    image: "infervoyage-locust:latest"
-    pullPolicy: "IfNotPresent"
+    image: "docker.io/library/infervoyage-locust:latest"
+    pullPolicy: "Never"
     replicas: 1
     resources:
       requests:
@@ -135,9 +136,9 @@ locust:
         cpu: 500m
         memory: 256Mi
   worker:
-    image: "infervoyage-locust:latest"
-    pullPolicy: "IfNotPresent"
-    replicas: 2
+    image: "docker.io/library/infervoyage-locust:latest"
+    pullPolicy: "Never"
+    replicas: 1
     resources:
       requests:
         cpu: 100m

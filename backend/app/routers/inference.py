@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import uuid
 
 import structlog
@@ -58,7 +59,14 @@ async def chat_completions(
     rpm, burst = await _get_org_limits(db, org_id)
     allowed, retry_after = await check_rate_limit(org_id, rpm, burst)
     if not allowed:
+        await db.rollback()
+        await db.close()
         raise RateLimitError(retry_after=retry_after)
+
+    # Release the database session/connection back to the pool immediately
+    # before we start the slow inference call.
+    await db.rollback()
+    await db.close()
 
     if request.stream:
         request_id = response.headers.get("X-Request-ID", str(uuid.uuid4()))
@@ -70,25 +78,32 @@ async def chat_completions(
         _request_id = request_id
 
         async def on_complete_callback(prompt_tokens: int, completion_tokens: int) -> None:
-            """Open a fresh session — the request-scoped session is closed by stream end."""
-            factory = get_session_factory()
-            async with factory() as fresh_db:
-                try:
-                    await log_usage(
-                        fresh_db,
-                        org_id=_org_id,
-                        user_id=_user_id,
-                        api_key_id=_api_key_id,
-                        model_name=_model,
-                        request_id=_request_id,
-                        prompt_tokens=prompt_tokens,
-                        completion_tokens=completion_tokens,
-                        duration_ms=0,
-                        status="success" if (prompt_tokens > 0 or completion_tokens > 0) else "cancelled",
-                    )
-                    await fresh_db.commit()
-                except Exception:
-                    logger.exception("stream_usage_log_failed", model=_model, org_id=_org_id)
+            """Open a fresh session — shielded from CancelledError on client disconnect."""
+            async def _do_log():
+                factory = get_session_factory()
+                async with factory() as fresh_db:
+                    try:
+                        await log_usage(
+                            fresh_db,
+                            org_id=_org_id,
+                            user_id=_user_id,
+                            api_key_id=_api_key_id,
+                            model_name=_model,
+                            request_id=_request_id,
+                            prompt_tokens=prompt_tokens,
+                            completion_tokens=completion_tokens,
+                            duration_ms=0,
+                            status="success" if (prompt_tokens > 0 or completion_tokens > 0) else "cancelled",
+                        )
+                        await fresh_db.commit()
+                    except Exception:
+                        logger.exception("stream_usage_log_failed", model=_model, org_id=_org_id)
+
+            try:
+                await asyncio.shield(asyncio.ensure_future(_do_log()))
+            except asyncio.CancelledError:
+                # Shield ensures _do_log() continues even when we're cancelled
+                pass
 
         return StreamingResponse(
             inference_service.stream_complete(request, org_id=org_id, on_complete=on_complete_callback),
@@ -101,20 +116,26 @@ async def chat_completions(
         )
 
     result = await inference_service.complete(request, org_id=org_id)
-    # Log usage for non-streaming requests
+    # Log usage for non-streaming requests using a fresh DB session
     request_id = response.headers.get("X-Request-ID", str(uuid.uuid4()))
-    await log_usage(
-        db,
-        org_id=org_id,
-        user_id=current_user.user_id,
-        api_key_id=current_user.api_key_id,
-        model_name=request.model,
-        request_id=request_id,
-        prompt_tokens=result.usage.prompt_tokens if result.usage else 0,
-        completion_tokens=result.usage.completion_tokens if result.usage else 0,
-        duration_ms=0,
-        status="success",
-    )
+    factory = get_session_factory()
+    async with factory() as fresh_db:
+        try:
+            await log_usage(
+                fresh_db,
+                org_id=org_id,
+                user_id=current_user.user_id,
+                api_key_id=current_user.api_key_id,
+                model_name=request.model,
+                request_id=request_id,
+                prompt_tokens=result.usage.prompt_tokens if result.usage else 0,
+                completion_tokens=result.usage.completion_tokens if result.usage else 0,
+                duration_ms=0,
+                status="success",
+            )
+            await fresh_db.commit()
+        except Exception:
+            logger.exception("completions_usage_log_failed", model=request.model, org_id=org_id)
     return result
 
 

@@ -92,6 +92,8 @@ spec:
                   key: resend-sender
             - name: MODEL_NAME
               value: {{ .Values.api.modelName | quote }}
+            - name: AUTO_PULL_MODELS
+              value: {{ .Values.api.autoPullModels | default false | quote }}
           resources:
             {{- toYaml .Values.api.resources | nindent 12 }}
           livenessProbe:

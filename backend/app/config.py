@@ -53,9 +53,10 @@ class Settings(BaseSettings):
     # ── Ollama / Inference ─────────────────────────────────────────
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MAX_LOADED_MODELS: int = 1
-    INFERENCE_TIMEOUT_SECONDS: int = 120
+    AUTO_PULL_MODELS: bool = True
+    INFERENCE_TIMEOUT_SECONDS: int = 300
     INFERENCE_NUM_CTX: int = 2048
-    MAX_CONCURRENT_INFERENCE: int = 4
+    MAX_CONCURRENT_INFERENCE: int = 20
     INFERENCE_ENGINE: Literal["ollama", "openai_compatible"] = "ollama"
     INFERENCE_ENGINE_URL: str | None = None
 

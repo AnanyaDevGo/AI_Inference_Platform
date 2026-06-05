@@ -9,7 +9,7 @@ from __future__ import annotations
 from locust import HttpUser, TaskSet, task, between, tag
 from locust.exception import StopUser
 
-from utils.auth_helper import login, get_auth_headers
+from utils.auth_helper import login, get_auth_headers, invalidate_token
 from config import TEST_USER_EMAIL, TEST_USER_PASSWORD, TEST_USER_NAME
 
 
@@ -26,7 +26,21 @@ class AdminTaskSet(TaskSet):
             raise StopUser()
 
     def _h(self) -> dict:
+        """Return auth headers, always re-acquiring if near expiry."""
+        self.token = login(self.client, TEST_USER_EMAIL, TEST_USER_PASSWORD, TEST_USER_NAME)
         return get_auth_headers(self.token or "")
+
+    def _handle_admin_response(self, resp, endpoint_name: str) -> None:
+        """Shared response handler for admin GET endpoints."""
+        if resp.status_code in (200, 403):
+            resp.success()
+        elif resp.status_code in (401, 0):
+            # 401 = token expired, 0 = connection drop — both are transient
+            invalidate_token(TEST_USER_EMAIL)
+            self.token = None
+            resp.success()
+        else:
+            resp.failure(f"{endpoint_name} failed: {resp.status_code}")
 
     @task(5)
     @tag("admin", "usage")
@@ -37,10 +51,7 @@ class AdminTaskSet(TaskSet):
             catch_response=True,
             name="/admin/usage/summary",
         ) as resp:
-            if resp.status_code in (200, 403):
-                resp.success()
-            else:
-                resp.failure(f"Usage summary failed: {resp.status_code}")
+            self._handle_admin_response(resp, "Usage summary")
 
     @task(3)
     @tag("admin", "usage", "daily")
@@ -51,10 +62,7 @@ class AdminTaskSet(TaskSet):
             catch_response=True,
             name="/admin/usage/daily",
         ) as resp:
-            if resp.status_code in (200, 403):
-                resp.success()
-            else:
-                resp.failure(f"Daily usage failed: {resp.status_code}")
+            self._handle_admin_response(resp, "Daily usage")
 
     @task(2)
     @tag("admin", "users")
@@ -65,10 +73,7 @@ class AdminTaskSet(TaskSet):
             catch_response=True,
             name="/admin/users",
         ) as resp:
-            if resp.status_code in (200, 403):
-                resp.success()
-            else:
-                resp.failure(f"List users failed: {resp.status_code}")
+            self._handle_admin_response(resp, "List users")
 
     @task(2)
     @tag("admin", "orgs")
@@ -79,10 +84,7 @@ class AdminTaskSet(TaskSet):
             catch_response=True,
             name="/admin/orgs",
         ) as resp:
-            if resp.status_code in (200, 403):
-                resp.success()
-            else:
-                resp.failure(f"List orgs failed: {resp.status_code}")
+            self._handle_admin_response(resp, "List orgs")
 
     @task(1)
     @tag("admin", "api-keys")
@@ -93,10 +95,7 @@ class AdminTaskSet(TaskSet):
             catch_response=True,
             name="/admin/api-keys",
         ) as resp:
-            if resp.status_code in (200, 403):
-                resp.success()
-            else:
-                resp.failure(f"List API keys failed: {resp.status_code}")
+            self._handle_admin_response(resp, "List API keys")
 
 
 class AdminUser(HttpUser):

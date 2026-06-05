@@ -1,0 +1,2037 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: infervoyage-grafana-dashboards
+  namespace: infervoyage-dev
+  labels:
+    grafana_dashboard: '1'
+    release: prometheus
+data:
+  platform-overview.json: "{\n  \"annotations\": {\n    \"list\": [\n      {\n   \
+    \     \"builtIn\": 1,\n        \"datasource\": {\n          \"type\": \"grafana\"\
+    ,\n          \"uid\": \"-- Grafana --\"\n        },\n        \"enable\": true,\n\
+    \        \"hide\": true,\n        \"iconColor\": \"rgba(0, 211, 255, 1)\",\n \
+    \       \"name\": \"Annotations & Alerts\",\n        \"type\": \"dashboard\"\n\
+    \      }\n    ]\n  },\n  \"description\": \"General platform health, status of\
+    \ critical dependencies, overall load, error rates, and active users.\",\n  \"\
+    editable\": true,\n  \"fiscalYearStartMonth\": 0,\n  \"graphTooltip\": 1,\n  \"\
+    id\": null,\n  \"links\": [],\n  \"panels\": [\n    {\n      \"collapsed\": false,\n\
+    \      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n\
+    \        \"y\": 0\n      },\n      \"id\": 10,\n      \"title\": \"Service Status\
+    \ & Health\",\n      \"type\": \"row\"\n    },\n    {\n      \"datasource\": {\n\
+    \        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n\
+    \      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\": {\n \
+    \           \"mode\": \"thresholds\"\n          },\n          \"mappings\": [\n\
+    \            {\n              \"options\": {\n                \"match\": \"null\"\
+    ,\n                \"result\": {\n                  \"text\": \"DOWN\"\n     \
+    \           }\n              },\n              \"type\": \"special\"\n       \
+    \     },\n            {\n              \"options\": {\n                \"from\"\
+    : 1,\n                \"result\": {\n                  \"color\": \"green\",\n\
+    \                  \"text\": \"UP\"\n                },\n                \"to\"\
+    : 1\n              },\n              \"type\": \"range\"\n            },\n   \
+    \         {\n              \"options\": {\n                \"from\": 0,\n    \
+    \            \"result\": {\n                  \"color\": \"red\",\n          \
+    \        \"text\": \"DOWN\"\n                },\n                \"to\": 0\n \
+    \             },\n              \"type\": \"range\"\n            }\n         \
+    \ ],\n          \"thresholds\": {\n            \"mode\": \"absolute\",\n     \
+    \       \"steps\": [\n              {\n                \"color\": \"red\",\n \
+    \               \"value\": null\n              },\n              {\n         \
+    \       \"color\": \"green\",\n                \"value\": 1\n              }\n\
+    \            ]\n          }\n        }\n      },\n      \"gridPos\": {\n     \
+    \   \"h\": 4,\n        \"w\": 6,\n        \"x\": 0,\n        \"y\": 1\n      },\n\
+    \      \"id\": 1,\n      \"options\": {\n        \"colorMode\": \"background\"\
+    ,\n        \"graphMode\": \"none\",\n        \"justifyMode\": \"center\",\n  \
+    \      \"percentChangeColorMode\": \"value\",\n        \"reduceOptions\": {\n\
+    \          \"calcs\": [\n            \"lastNotNull\"\n          ],\n         \
+    \ \"fields\": \"\",\n          \"values\": false\n        },\n        \"textMode\"\
+    : \"value\"\n      },\n      \"targets\": [\n        {\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\
+    \n          },\n          \"editorMode\": \"code\",\n          \"expr\": \"db_up\"\
+    ,\n          \"instant\": true,\n          \"range\": false,\n          \"refId\"\
+    : \"A\"\n        }\n      ],\n      \"title\": \"Database Status\",\n      \"\
+    type\": \"stat\"\n    },\n    {\n      \"datasource\": {\n        \"type\": \"\
+    prometheus\",\n        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": {\n            \"mode\": \"\
+    thresholds\"\n          },\n          \"mappings\": [\n            {\n       \
+    \       \"options\": {\n                \"match\": \"null\",\n               \
+    \ \"result\": {\n                  \"text\": \"DOWN\"\n                }\n   \
+    \           },\n              \"type\": \"special\"\n            },\n        \
+    \    {\n              \"options\": {\n                \"from\": 1,\n         \
+    \       \"result\": {\n                  \"color\": \"green\",\n             \
+    \     \"text\": \"UP\"\n                },\n                \"to\": 1\n      \
+    \        },\n              \"type\": \"range\"\n            },\n            {\n\
+    \              \"options\": {\n                \"from\": 0,\n                \"\
+    result\": {\n                  \"color\": \"red\",\n                  \"text\"\
+    : \"DOWN\"\n                },\n                \"to\": 0\n              },\n\
+    \              \"type\": \"range\"\n            }\n          ],\n          \"\
+    thresholds\": {\n            \"mode\": \"absolute\",\n            \"steps\": [\n\
+    \              {\n                \"color\": \"red\",\n                \"value\"\
+    : null\n              },\n              {\n                \"color\": \"green\"\
+    ,\n                \"value\": 1\n              }\n            ]\n          }\n\
+    \        }\n      },\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\":\
+    \ 6,\n        \"x\": 6,\n        \"y\": 1\n      },\n      \"id\": 2,\n      \"\
+    options\": {\n        \"colorMode\": \"background\",\n        \"graphMode\": \"\
+    none\",\n        \"justifyMode\": \"center\",\n        \"percentChangeColorMode\"\
+    : \"value\",\n        \"reduceOptions\": {\n          \"calcs\": [\n         \
+    \   \"lastNotNull\"\n          ],\n          \"fields\": \"\",\n          \"values\"\
+    : false\n        },\n        \"textMode\": \"value\"\n      },\n      \"targets\"\
+    : [\n        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"prometheus\"\n          },\n          \"editorMode\"\
+    : \"code\",\n          \"expr\": \"redis_up\",\n          \"instant\": true,\n\
+    \          \"range\": false,\n          \"refId\": \"A\"\n        }\n      ],\n\
+    \      \"title\": \"Redis Status\",\n      \"type\": \"stat\"\n    },\n    {\n\
+    \      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\":\
+    \ \"prometheus\"\n      },\n      \"fieldConfig\": {\n        \"defaults\": {\n\
+    \          \"color\": {\n            \"mode\": \"thresholds\"\n          },\n\
+    \          \"mappings\": [\n            {\n              \"options\": {\n    \
+    \            \"match\": \"null\",\n                \"result\": {\n           \
+    \       \"text\": \"DOWN\"\n                }\n              },\n            \
+    \  \"type\": \"special\"\n            },\n            {\n              \"options\"\
+    : {\n                \"from\": 1,\n                \"result\": {\n           \
+    \       \"color\": \"green\",\n                  \"text\": \"UP\"\n          \
+    \      },\n                \"to\": 1\n              },\n              \"type\"\
+    : \"range\"\n            },\n            {\n              \"options\": {\n   \
+    \             \"from\": 0,\n                \"result\": {\n                  \"\
+    color\": \"red\",\n                  \"text\": \"DOWN\"\n                },\n\
+    \                \"to\": 0\n              },\n              \"type\": \"range\"\
+    \n            }\n          ],\n          \"thresholds\": {\n            \"mode\"\
+    : \"absolute\",\n            \"steps\": [\n              {\n                \"\
+    color\": \"red\",\n                \"value\": null\n              },\n       \
+    \       {\n                \"color\": \"green\",\n                \"value\": 1\n\
+    \              }\n            ]\n          }\n        }\n      },\n      \"gridPos\"\
+    : {\n        \"h\": 4,\n        \"w\": 6,\n        \"x\": 12,\n        \"y\":\
+    \ 1\n      },\n      \"id\": 3,\n      \"options\": {\n        \"colorMode\":\
+    \ \"background\",\n        \"graphMode\": \"none\",\n        \"justifyMode\":\
+    \ \"center\",\n        \"percentChangeColorMode\": \"value\",\n        \"reduceOptions\"\
+    : {\n          \"calcs\": [\n            \"lastNotNull\"\n          ],\n     \
+    \     \"fields\": \"\",\n          \"values\": false\n        },\n        \"textMode\"\
+    : \"value\"\n      },\n      \"targets\": [\n        {\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\
+    \n          },\n          \"editorMode\": \"code\",\n          \"expr\": \"ollama_up\"\
+    ,\n          \"instant\": true,\n          \"range\": false,\n          \"refId\"\
+    : \"A\"\n        }\n      ],\n      \"title\": \"Ollama / Model Engine Status\"\
+    ,\n      \"type\": \"stat\"\n    },\n    {\n      \"datasource\": {\n        \"\
+    type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": {\n            \"mode\": \"\
+    thresholds\"\n          },\n          \"mappings\": [],\n          \"thresholds\"\
+    : {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"red\",\n                \"value\": null\n\
+    \              },\n              {\n                \"color\": \"green\",\n  \
+    \              \"value\": 1\n              }\n            ]\n          },\n  \
+    \        \"unit\": \"s\"\n        }\n      },\n      \"gridPos\": {\n        \"\
+    h\": 4,\n        \"w\": 6,\n        \"x\": 18,\n        \"y\": 1\n      },\n \
+    \     \"id\": 4,\n      \"options\": {\n        \"colorMode\": \"value\",\n  \
+    \      \"graphMode\": \"area\",\n        \"justifyMode\": \"center\",\n      \
+    \  \"percentChangeColorMode\": \"value\",\n        \"reduceOptions\": {\n    \
+    \      \"calcs\": [\n            \"lastNotNull\"\n          ],\n          \"fields\"\
+    : \"\",\n          \"values\": false\n        },\n        \"textMode\": \"value\"\
+    \n      },\n      \"targets\": [\n        {\n          \"datasource\": {\n   \
+    \         \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n   \
+    \       },\n          \"editorMode\": \"code\",\n          \"expr\": \"time()\
+    \ - process_start_time_seconds{job=\\\"infervoyage_api\\\"}\",\n          \"instant\"\
+    : true,\n          \"range\": false,\n          \"refId\": \"A\"\n        }\n\
+    \      ],\n      \"title\": \"System Uptime (API)\",\n      \"type\": \"stat\"\
+    \n    },\n    {\n      \"collapsed\": false,\n      \"gridPos\": {\n        \"\
+    h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 5\n      },\n \
+    \     \"id\": 11,\n      \"title\": \"Platform Activity & Load\",\n      \"type\"\
+    : \"row\"\n    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\"\
+    ,\n        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\": {\n     \
+    \   \"defaults\": {\n          \"color\": {\n            \"mode\": \"palette-classic\"\
+    \n          },\n          \"mappings\": [],\n          \"unit\": \"short\"\n \
+    \       }\n      },\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 8,\n\
+    \        \"x\": 0,\n        \"y\": 6\n      },\n      \"id\": 5,\n      \"options\"\
+    : {\n        \"colorMode\": \"value\",\n        \"graphMode\": \"area\",\n   \
+    \     \"justifyMode\": \"center\",\n        \"percentChangeColorMode\": \"value\"\
+    ,\n        \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\
+    \n          ],\n          \"fields\": \"\",\n          \"values\": false\n   \
+    \     },\n        \"textMode\": \"value\"\n      },\n      \"targets\": [\n  \
+    \      {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n\
+    \            \"uid\": \"prometheus\"\n          },\n          \"editorMode\":\
+    \ \"code\",\n          \"expr\": \"active_users_last_15m\",\n          \"instant\"\
+    : true,\n          \"range\": false,\n          \"refId\": \"A\"\n        }\n\
+    \      ],\n      \"title\": \"Active Users (Last 15m)\",\n      \"type\": \"stat\"\
+    \n    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n\
+    \        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\": {\n       \
+    \ \"defaults\": {\n          \"color\": {\n            \"mode\": \"palette-classic\"\
+    \n          },\n          \"mappings\": [],\n          \"unit\": \"short\"\n \
+    \       }\n      },\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 8,\n\
+    \        \"x\": 8,\n        \"y\": 6\n      },\n      \"id\": 6,\n      \"options\"\
+    : {\n        \"colorMode\": \"value\",\n        \"graphMode\": \"area\",\n   \
+    \     \"justifyMode\": \"center\",\n        \"percentChangeColorMode\": \"value\"\
+    ,\n        \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\
+    \n          ],\n          \"fields\": \"\",\n          \"values\": false\n   \
+    \     },\n        \"textMode\": \"value\"\n      },\n      \"targets\": [\n  \
+    \      {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n\
+    \            \"uid\": \"prometheus\"\n          },\n          \"editorMode\":\
+    \ \"code\",\n          \"expr\": \"sum(http_requests_total)\",\n          \"instant\"\
+    : true,\n          \"range\": false,\n          \"refId\": \"A\"\n        }\n\
+    \      ],\n      \"title\": \"Total Platform Requests\",\n      \"type\": \"stat\"\
+    \n    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n\
+    \        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\": {\n       \
+    \ \"defaults\": {\n          \"color\": {\n            \"mode\": \"thresholds\"\
+    \n          },\n          \"mappings\": [],\n          \"thresholds\": {\n   \
+    \         \"mode\": \"absolute\",\n            \"steps\": [\n              {\n\
+    \                \"color\": \"green\",\n                \"value\": null\n    \
+    \          },\n              {\n                \"color\": \"yellow\",\n     \
+    \           \"value\": 1\n              },\n              {\n                \"\
+    color\": \"red\",\n                \"value\": 5\n              }\n           \
+    \ ]\n          },\n          \"unit\": \"percent\"\n        }\n      },\n    \
+    \  \"gridPos\": {\n        \"h\": 4,\n        \"w\": 8,\n        \"x\": 16,\n\
+    \        \"y\": 6\n      },\n      \"id\": 7,\n      \"options\": {\n        \"\
+    colorMode\": \"value\",\n        \"graphMode\": \"area\",\n        \"justifyMode\"\
+    : \"center\",\n        \"percentChangeColorMode\": \"value\",\n        \"reduceOptions\"\
+    : {\n          \"calcs\": [\n            \"lastNotNull\"\n          ],\n     \
+    \     \"fields\": \"\",\n          \"values\": false\n        },\n        \"textMode\"\
+    : \"value\"\n      },\n      \"targets\": [\n        {\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\
+    \n          },\n          \"editorMode\": \"code\",\n          \"expr\": \"100\
+    \ * (sum(rate(http_requests_total{status=~\\\"5..\\\"}[5m])) or vector(0)) / sum(rate(http_requests_total[5m]))\"\
+    ,\n          \"instant\": true,\n          \"range\": false,\n          \"refId\"\
+    : \"A\"\n        }\n      ],\n      \"title\": \"Error Rate % (5xx / Overall)\"\
+    ,\n      \"type\": \"stat\"\n    },\n    {\n      \"collapsed\": false,\n    \
+    \  \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n\
+    \        \"y\": 10\n      },\n      \"id\": 12,\n      \"title\": \"Overall Performance\
+    \ Charts\",\n      \"type\": \"row\"\n    },\n    {\n      \"datasource\": {\n\
+    \        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n\
+    \      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\": {\n \
+    \           \"mode\": \"palette-classic\"\n          },\n          \"custom\"\
+    : {\n            \"axisLabel\": \"RPS\",\n            \"drawStyle\": \"line\"\
+    ,\n            \"fillOpacity\": 10,\n            \"gradientMode\": \"opacity\"\
+    ,\n            \"lineInterpolation\": \"smooth\",\n            \"lineWidth\":\
+    \ 2,\n            \"spanNulls\": false\n          },\n          \"unit\": \"reqps\"\
+    \n        }\n      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\"\
+    : 12,\n        \"x\": 0,\n        \"y\": 11\n      },\n      \"id\": 8,\n    \
+    \  \"targets\": [\n        {\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n       \
+    \   \"editorMode\": \"code\",\n          \"expr\": \"sum(rate(http_requests_total[5m]))\
+    \ by (handler)\",\n          \"legendFormat\": \"{{handler}}\",\n          \"\
+    refId\": \"A\"\n        }\n      ],\n      \"title\": \"Overall Request Rate (RPS)\"\
+    ,\n      \"type\": \"timeseries\"\n    },\n    {\n      \"datasource\": {\n  \
+    \      \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n\
+    \      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\": {\n \
+    \           \"mode\": \"palette-classic\"\n          },\n          \"custom\"\
+    : {\n            \"axisLabel\": \"Latency\",\n            \"drawStyle\": \"line\"\
+    ,\n            \"fillOpacity\": 10,\n            \"gradientMode\": \"opacity\"\
+    ,\n            \"lineInterpolation\": \"smooth\",\n            \"lineWidth\":\
+    \ 2,\n            \"spanNulls\": false\n          },\n          \"unit\": \"s\"\
+    \n        }\n      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\"\
+    : 12,\n        \"x\": 12,\n        \"y\": 11\n      },\n      \"id\": 9,\n   \
+    \   \"targets\": [\n        {\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n       \
+    \   \"editorMode\": \"code\",\n          \"expr\": \"histogram_quantile(0.95,\
+    \ sum(rate(http_request_duration_seconds_bucket[5m])) by (le))\",\n          \"\
+    legendFormat\": \"P95 API Latency\",\n          \"refId\": \"A\"\n        },\n\
+    \        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"prometheus\"\n          },\n          \"editorMode\"\
+    : \"code\",\n          \"expr\": \"histogram_quantile(0.95, sum(rate(inference_duration_seconds_bucket[5m]))\
+    \ by (le))\",\n          \"legendFormat\": \"P95 Inference Latency\",\n      \
+    \    \"refId\": \"B\"\n        }\n      ],\n      \"title\": \"P95 Latency Trend\
+    \ (API vs inference)\",\n      \"type\": \"timeseries\"\n    }\n  ],\n  \"refresh\"\
+    : \"10s\",\n  \"schemaVersion\": 38,\n  \"tags\": [\n    \"overview\",\n    \"\
+    health\",\n    \"infervoyage\"\n  ],\n  \"time\": {\n    \"from\": \"now-1h\"\
+    ,\n    \"to\": \"now\"\n  },\n  \"timezone\": \"browser\",\n  \"title\": \"Platform\
+    \ Overview\",\n  \"uid\": \"platform-overview\",\n  \"version\": 1\n}"
+  api-performance.json: "{\n  \"__inputs\": [\n    {\n      \"name\": \"DS_PROMETHEUS\"\
+    ,\n      \"label\": \"Prometheus\",\n      \"description\": \"\",\n      \"type\"\
+    : \"datasource\",\n      \"pluginId\": \"prometheus\",\n      \"pluginName\":\
+    \ \"Prometheus\"\n    }\n  ],\n  \"__requires\": [\n    {\n      \"type\": \"\
+    grafana\",\n      \"id\": \"grafana\",\n      \"name\": \"Grafana\",\n      \"\
+    version\": \"10.0.0\"\n    },\n    {\n      \"type\": \"datasource\",\n      \"\
+    id\": \"prometheus\",\n      \"name\": \"Prometheus\",\n      \"version\": \"\
+    1.0.0\"\n    },\n    {\n      \"type\": \"panel\",\n      \"id\": \"timeseries\"\
+    ,\n      \"name\": \"Time series\",\n      \"version\": \"\"\n    },\n    {\n\
+    \      \"type\": \"panel\",\n      \"id\": \"gauge\",\n      \"name\": \"Gauge\"\
+    ,\n      \"version\": \"\"\n    },\n    {\n      \"type\": \"panel\",\n      \"\
+    id\": \"piechart\",\n      \"name\": \"Pie chart\",\n      \"version\": \"\"\n\
+    \    },\n    {\n      \"type\": \"panel\",\n      \"id\": \"table\",\n      \"\
+    name\": \"Table\",\n      \"version\": \"\"\n    }\n  ],\n  \"annotations\": {\n\
+    \    \"list\": [\n      {\n        \"builtIn\": 1,\n        \"datasource\": {\n\
+    \          \"type\": \"grafana\",\n          \"uid\": \"-- Grafana --\"\n    \
+    \    },\n        \"enable\": true,\n        \"hide\": true,\n        \"iconColor\"\
+    : \"rgba(0, 211, 255, 1)\",\n        \"name\": \"Annotations & Alerts\",\n   \
+    \     \"type\": \"dashboard\"\n      }\n    ]\n  },\n  \"description\": \"HTTP\
+    \ API performance metrics \\u2014 request rate, latency percentiles, error rate,\
+    \ and endpoint analysis\",\n  \"editable\": true,\n  \"fiscalYearStartMonth\"\
+    : 0,\n  \"graphTooltip\": 1,\n  \"id\": null,\n  \"links\": [],\n  \"panels\"\
+    : [\n    {\n      \"collapsed\": false,\n      \"gridPos\": {\n        \"h\":\
+    \ 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 0\n      },\n    \
+    \  \"id\": 100,\n      \"title\": \"Traffic\",\n      \"type\": \"row\"\n    },\n\
+    \    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"\
+    uid\": \"prometheus\"\n      },\n      \"description\": \"HTTP requests per second\
+    \ across all routes\",\n      \"fieldConfig\": {\n        \"defaults\": {\n  \
+    \        \"color\": {\n            \"mode\": \"palette-classic\"\n          },\n\
+    \          \"custom\": {\n            \"axisBorderShow\": false,\n           \
+    \ \"axisCenteredZero\": false,\n            \"axisColorMode\": \"text\",\n   \
+    \         \"axisLabel\": \"req/s\",\n            \"axisPlacement\": \"auto\",\n\
+    \            \"barAlignment\": 0,\n            \"drawStyle\": \"line\",\n    \
+    \        \"fillOpacity\": 15,\n            \"gradientMode\": \"opacity\",\n  \
+    \          \"hideFrom\": {\n              \"legend\": false,\n              \"\
+    tooltip\": false,\n              \"viz\": false\n            },\n            \"\
+    insertNulls\": false,\n            \"lineInterpolation\": \"smooth\",\n      \
+    \      \"lineWidth\": 2,\n            \"pointSize\": 5,\n            \"scaleDistribution\"\
+    : {\n              \"type\": \"linear\"\n            },\n            \"showPoints\"\
+    : \"never\",\n            \"spanNulls\": false,\n            \"stacking\": {\n\
+    \              \"group\": \"A\",\n              \"mode\": \"none\"\n         \
+    \   },\n            \"thresholdsStyle\": {\n              \"mode\": \"off\"\n\
+    \            }\n          },\n          \"mappings\": [],\n          \"thresholds\"\
+    : {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              },\n              {\n                \"color\": \"red\",\n    \
+    \            \"value\": 80\n              }\n            ]\n          },\n   \
+    \       \"unit\": \"reqps\"\n        },\n        \"overrides\": []\n      },\n\
+    \      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\": 0,\n\
+    \        \"y\": 1\n      },\n      \"id\": 1,\n      \"options\": {\n        \"\
+    legend\": {\n          \"calcs\": [\n            \"mean\",\n            \"max\"\
+    ,\n            \"lastNotNull\"\n          ],\n          \"displayMode\": \"table\"\
+    ,\n          \"placement\": \"bottom\",\n          \"showLegend\": true\n    \
+    \    },\n        \"tooltip\": {\n          \"mode\": \"multi\",\n          \"\
+    sort\": \"desc\"\n        }\n      },\n      \"targets\": [\n        {\n     \
+    \     \"datasource\": {\n            \"type\": \"prometheus\",\n            \"\
+    uid\": \"prometheus\"\n          },\n          \"editorMode\": \"code\",\n   \
+    \       \"expr\": \"sum(rate(http_requests_total[5m])) by (method, handler)\"\
+    ,\n          \"instant\": false,\n          \"legendFormat\": \"{{method}} {{handler}}\"\
+    ,\n          \"range\": true,\n          \"refId\": \"A\"\n        }\n      ],\n\
+    \      \"title\": \"Request Rate (RPS)\",\n      \"type\": \"timeseries\"\n  \
+    \  },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n   \
+    \     \"uid\": \"prometheus\"\n      },\n      \"description\": \"Number of HTTP\
+    \ requests currently being processed\",\n      \"fieldConfig\": {\n        \"\
+    defaults\": {\n          \"color\": {\n            \"mode\": \"thresholds\"\n\
+    \          },\n          \"mappings\": [],\n          \"thresholds\": {\n    \
+    \        \"mode\": \"absolute\",\n            \"steps\": [\n              {\n\
+    \                \"color\": \"green\",\n                \"value\": null\n    \
+    \          },\n              {\n                \"color\": \"yellow\",\n     \
+    \           \"value\": 20\n              },\n              {\n               \
+    \ \"color\": \"red\",\n                \"value\": 50\n              }\n      \
+    \      ]\n          },\n          \"unit\": \"short\"\n        },\n        \"\
+    overrides\": []\n      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"\
+    w\": 12,\n        \"x\": 12,\n        \"y\": 1\n      },\n      \"id\": 2,\n \
+    \     \"options\": {\n        \"minVizHeight\": 75,\n        \"minVizWidth\":\
+    \ 75,\n        \"orientation\": \"auto\",\n        \"reduceOptions\": {\n    \
+    \      \"calcs\": [\n            \"lastNotNull\"\n          ],\n          \"fields\"\
+    : \"\",\n          \"values\": false\n        },\n        \"showThresholdLabels\"\
+    : false,\n        \"showThresholdMarkers\": true\n      },\n      \"targets\"\
+    : [\n        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"prometheus\"\n          },\n          \"editorMode\"\
+    : \"code\",\n          \"expr\": \"sum(http_requests_in_flight) or vector(0)\"\
+    ,\n          \"instant\": true,\n          \"legendFormat\": \"In-Flight\",\n\
+    \          \"range\": false,\n          \"refId\": \"A\"\n        }\n      ],\n\
+    \      \"title\": \"Requests In-Flight\",\n      \"type\": \"gauge\"\n    },\n\
+    \    {\n      \"collapsed\": false,\n      \"gridPos\": {\n        \"h\": 1,\n\
+    \        \"w\": 24,\n        \"x\": 0,\n        \"y\": 9\n      },\n      \"id\"\
+    : 101,\n      \"title\": \"Latency\",\n      \"type\": \"row\"\n    },\n    {\n\
+    \      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\":\
+    \ \"prometheus\"\n      },\n      \"description\": \"Response time percentiles\
+    \ from histogram buckets\",\n      \"fieldConfig\": {\n        \"defaults\": {\n\
+    \          \"color\": {\n            \"mode\": \"palette-classic\"\n         \
+    \ },\n          \"custom\": {\n            \"axisBorderShow\": false,\n      \
+    \      \"axisLabel\": \"latency\",\n            \"drawStyle\": \"line\",\n   \
+    \         \"fillOpacity\": 10,\n            \"gradientMode\": \"opacity\",\n \
+    \           \"lineInterpolation\": \"smooth\",\n            \"lineWidth\": 2,\n\
+    \            \"pointSize\": 5,\n            \"scaleDistribution\": {\n       \
+    \       \"type\": \"linear\"\n            },\n            \"showPoints\": \"never\"\
+    ,\n            \"spanNulls\": false\n          },\n          \"mappings\": [],\n\
+    \          \"thresholds\": {\n            \"mode\": \"absolute\",\n          \
+    \  \"steps\": [\n              {\n                \"color\": \"green\",\n    \
+    \            \"value\": null\n              },\n              {\n            \
+    \    \"color\": \"red\",\n                \"value\": 2\n              }\n    \
+    \        ]\n          },\n          \"unit\": \"s\"\n        },\n        \"overrides\"\
+    : [\n          {\n            \"matcher\": {\n              \"id\": \"byName\"\
+    ,\n              \"options\": \"P99\"\n            },\n            \"properties\"\
+    : [\n              {\n                \"id\": \"color\",\n                \"value\"\
+    : {\n                  \"fixedColor\": \"red\",\n                  \"mode\": \"\
+    fixed\"\n                }\n              }\n            ]\n          },\n   \
+    \       {\n            \"matcher\": {\n              \"id\": \"byName\",\n   \
+    \           \"options\": \"P95\"\n            },\n            \"properties\":\
+    \ [\n              {\n                \"id\": \"color\",\n                \"value\"\
+    : {\n                  \"fixedColor\": \"orange\",\n                  \"mode\"\
+    : \"fixed\"\n                }\n              }\n            ]\n          },\n\
+    \          {\n            \"matcher\": {\n              \"id\": \"byName\",\n\
+    \              \"options\": \"P90\"\n            },\n            \"properties\"\
+    : [\n              {\n                \"id\": \"color\",\n                \"value\"\
+    : {\n                  \"fixedColor\": \"yellow\",\n                  \"mode\"\
+    : \"fixed\"\n                }\n              }\n            ]\n          },\n\
+    \          {\n            \"matcher\": {\n              \"id\": \"byName\",\n\
+    \              \"options\": \"P50\"\n            },\n            \"properties\"\
+    : [\n              {\n                \"id\": \"color\",\n                \"value\"\
+    : {\n                  \"fixedColor\": \"green\",\n                  \"mode\"\
+    : \"fixed\"\n                }\n              }\n            ]\n          }\n\
+    \        ]\n      },\n      \"gridPos\": {\n        \"h\": 9,\n        \"w\":\
+    \ 24,\n        \"x\": 0,\n        \"y\": 10\n      },\n      \"id\": 3,\n    \
+    \  \"options\": {\n        \"legend\": {\n          \"calcs\": [\n           \
+    \ \"mean\",\n            \"max\",\n            \"lastNotNull\"\n          ],\n\
+    \          \"displayMode\": \"table\",\n          \"placement\": \"bottom\",\n\
+    \          \"showLegend\": true\n        },\n        \"tooltip\": {\n        \
+    \  \"mode\": \"multi\",\n          \"sort\": \"desc\"\n        }\n      },\n \
+    \     \"targets\": [\n        {\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n       \
+    \   \"editorMode\": \"code\",\n          \"expr\": \"histogram_quantile(0.50,\
+    \ sum(rate(http_request_duration_seconds_bucket[5m])) by (le, handler))\",\n \
+    \         \"instant\": false,\n          \"legendFormat\": \"P50 {{handler}}\"\
+    ,\n          \"range\": true,\n          \"refId\": \"A\"\n        },\n      \
+    \  {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n   \
+    \         \"uid\": \"prometheus\"\n          },\n          \"editorMode\": \"\
+    code\",\n          \"expr\": \"histogram_quantile(0.90, sum(rate(http_request_duration_seconds_bucket[5m]))\
+    \ by (le, handler))\",\n          \"instant\": false,\n          \"legendFormat\"\
+    : \"P90 {{handler}}\",\n          \"range\": true,\n          \"refId\": \"B\"\
+    \n        },\n        {\n          \"datasource\": {\n            \"type\": \"\
+    prometheus\",\n            \"uid\": \"prometheus\"\n          },\n          \"\
+    editorMode\": \"code\",\n          \"expr\": \"histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m]))\
+    \ by (le, handler))\",\n          \"instant\": false,\n          \"legendFormat\"\
+    : \"P95 {{handler}}\",\n          \"range\": true,\n          \"refId\": \"C\"\
+    \n        },\n        {\n          \"datasource\": {\n            \"type\": \"\
+    prometheus\",\n            \"uid\": \"prometheus\"\n          },\n          \"\
+    editorMode\": \"code\",\n          \"expr\": \"histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m]))\
+    \ by (le, handler))\",\n          \"instant\": false,\n          \"legendFormat\"\
+    : \"P99 {{handler}}\",\n          \"range\": true,\n          \"refId\": \"D\"\
+    \n        }\n      ],\n      \"title\": \"Response Latency Percentiles (P50 /\
+    \ P90 / P95 / P99)\",\n      \"type\": \"timeseries\"\n    },\n    {\n      \"\
+    collapsed\": false,\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n\
+    \        \"x\": 0,\n        \"y\": 19\n      },\n      \"id\": 102,\n      \"\
+    title\": \"Errors\",\n      \"type\": \"row\"\n    },\n    {\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n    \
+    \  },\n      \"description\": \"Percentage of requests resulting in 4xx or 5xx\
+    \ status codes\",\n      \"fieldConfig\": {\n        \"defaults\": {\n       \
+    \   \"color\": {\n            \"mode\": \"palette-classic\"\n          },\n  \
+    \        \"custom\": {\n            \"axisLabel\": \"error %\",\n            \"\
+    drawStyle\": \"line\",\n            \"fillOpacity\": 20,\n            \"gradientMode\"\
+    : \"opacity\",\n            \"lineInterpolation\": \"smooth\",\n            \"\
+    lineWidth\": 2,\n            \"showPoints\": \"never\",\n            \"spanNulls\"\
+    : false\n          },\n          \"mappings\": [],\n          \"max\": 100,\n\
+    \          \"min\": 0,\n          \"thresholds\": {\n            \"mode\": \"\
+    absolute\",\n            \"steps\": [\n              {\n                \"color\"\
+    : \"green\",\n                \"value\": null\n              },\n            \
+    \  {\n                \"color\": \"yellow\",\n                \"value\": 1\n \
+    \             },\n              {\n                \"color\": \"red\",\n     \
+    \           \"value\": 5\n              }\n            ]\n          },\n     \
+    \     \"unit\": \"percent\"\n        },\n        \"overrides\": []\n      },\n\
+    \      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\": 0,\n\
+    \        \"y\": 20\n      },\n      \"id\": 4,\n      \"options\": {\n       \
+    \ \"legend\": {\n          \"calcs\": [\n            \"mean\",\n            \"\
+    max\",\n            \"lastNotNull\"\n          ],\n          \"displayMode\":\
+    \ \"table\",\n          \"placement\": \"bottom\",\n          \"showLegend\":\
+    \ true\n        },\n        \"tooltip\": {\n          \"mode\": \"multi\",\n \
+    \         \"sort\": \"desc\"\n        }\n      },\n      \"targets\": [\n    \
+    \    {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n \
+    \           \"uid\": \"prometheus\"\n          },\n          \"editorMode\": \"\
+    code\",\n          \"expr\": \"100 * sum(rate(http_requests_total{status=~\\\"\
+    4..\\\"}[5m])) / sum(rate(http_requests_total[5m]))\",\n          \"instant\"\
+    : false,\n          \"legendFormat\": \"4xx Rate %\",\n          \"range\": true,\n\
+    \          \"refId\": \"A\"\n        },\n        {\n          \"datasource\":\
+    \ {\n            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\
+    \n          },\n          \"editorMode\": \"code\",\n          \"expr\": \"100\
+    \ * sum(rate(http_requests_total{status=~\\\"5..\\\"}[5m])) / sum(rate(http_requests_total[5m]))\"\
+    ,\n          \"instant\": false,\n          \"legendFormat\": \"5xx Rate %\",\n\
+    \          \"range\": true,\n          \"refId\": \"B\"\n        }\n      ],\n\
+    \      \"title\": \"Error Rate % (4xx / 5xx)\",\n      \"type\": \"timeseries\"\
+    \n    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n\
+    \        \"uid\": \"prometheus\"\n      },\n      \"description\": \"Distribution\
+    \ of HTTP response status codes\",\n      \"fieldConfig\": {\n        \"defaults\"\
+    : {\n          \"color\": {\n            \"mode\": \"palette-classic\"\n     \
+    \     },\n          \"custom\": {\n            \"hideFrom\": {\n             \
+    \ \"legend\": false,\n              \"tooltip\": false,\n              \"viz\"\
+    : false\n            }\n          },\n          \"mappings\": [],\n          \"\
+    unit\": \"short\"\n        },\n        \"overrides\": [\n          {\n       \
+    \     \"matcher\": {\n              \"id\": \"byName\",\n              \"options\"\
+    : \"2xx\"\n            },\n            \"properties\": [\n              {\n  \
+    \              \"id\": \"color\",\n                \"value\": {\n            \
+    \      \"fixedColor\": \"green\",\n                  \"mode\": \"fixed\"\n   \
+    \             }\n              }\n            ]\n          },\n          {\n \
+    \           \"matcher\": {\n              \"id\": \"byName\",\n              \"\
+    options\": \"4xx\"\n            },\n            \"properties\": [\n          \
+    \    {\n                \"id\": \"color\",\n                \"value\": {\n   \
+    \               \"fixedColor\": \"yellow\",\n                  \"mode\": \"fixed\"\
+    \n                }\n              }\n            ]\n          },\n          {\n\
+    \            \"matcher\": {\n              \"id\": \"byName\",\n             \
+    \ \"options\": \"5xx\"\n            },\n            \"properties\": [\n      \
+    \        {\n                \"id\": \"color\",\n                \"value\": {\n\
+    \                  \"fixedColor\": \"red\",\n                  \"mode\": \"fixed\"\
+    \n                }\n              }\n            ]\n          }\n        ]\n\
+    \      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n     \
+    \   \"x\": 12,\n        \"y\": 20\n      },\n      \"id\": 5,\n      \"options\"\
+    : {\n        \"displayLabels\": [\n          \"name\",\n          \"percent\"\n\
+    \        ],\n        \"legend\": {\n          \"displayMode\": \"table\",\n  \
+    \        \"placement\": \"right\",\n          \"showLegend\": true,\n        \
+    \  \"values\": [\n            \"value\",\n            \"percent\"\n          ]\n\
+    \        },\n        \"pieType\": \"donut\",\n        \"tooltip\": {\n       \
+    \   \"mode\": \"multi\",\n          \"sort\": \"desc\"\n        }\n      },\n\
+    \      \"targets\": [\n        {\n          \"datasource\": {\n            \"\
+    type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n \
+    \         \"editorMode\": \"code\",\n          \"expr\": \"sum(increase(http_requests_total{status=~\\\
+    \"2..\\\"}[$__range])) or vector(0)\",\n          \"instant\": true,\n       \
+    \   \"legendFormat\": \"2xx\",\n          \"range\": false,\n          \"refId\"\
+    : \"A\"\n        },\n        {\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n       \
+    \   \"editorMode\": \"code\",\n          \"expr\": \"sum(increase(http_requests_total{status=~\\\
+    \"3..\\\"}[$__range])) or vector(0)\",\n          \"instant\": true,\n       \
+    \   \"legendFormat\": \"3xx\",\n          \"range\": false,\n          \"refId\"\
+    : \"B\"\n        },\n        {\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n       \
+    \   \"editorMode\": \"code\",\n          \"expr\": \"sum(increase(http_requests_total{status=~\\\
+    \"4..\\\"}[$__range])) or vector(0)\",\n          \"instant\": true,\n       \
+    \   \"legendFormat\": \"4xx\",\n          \"range\": false,\n          \"refId\"\
+    : \"C\"\n        },\n        {\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n       \
+    \   \"editorMode\": \"code\",\n          \"expr\": \"sum(increase(http_requests_total{status=~\\\
+    \"5..\\\"}[$__range])) or vector(0)\",\n          \"instant\": true,\n       \
+    \   \"legendFormat\": \"5xx\",\n          \"range\": false,\n          \"refId\"\
+    : \"D\"\n        }\n      ],\n      \"title\": \"Status Code Breakdown\",\n  \
+    \    \"type\": \"piechart\"\n    },\n    {\n      \"collapsed\": false,\n    \
+    \  \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n\
+    \        \"y\": 28\n      },\n      \"id\": 103,\n      \"title\": \"Endpoint\
+    \ Analysis\",\n      \"type\": \"row\"\n    },\n    {\n      \"datasource\": {\n\
+    \        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n\
+    \      \"description\": \"Top 10 slowest API endpoints by P95 latency over the\
+    \ selected time window\",\n      \"fieldConfig\": {\n        \"defaults\": {\n\
+    \          \"color\": {\n            \"mode\": \"thresholds\"\n          },\n\
+    \          \"custom\": {\n            \"align\": \"auto\",\n            \"cellOptions\"\
+    : {\n              \"type\": \"auto\"\n            },\n            \"inspect\"\
+    : false\n          },\n          \"mappings\": [],\n          \"thresholds\":\
+    \ {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              },\n              {\n                \"color\": \"yellow\",\n \
+    \               \"value\": 0.5\n              },\n              {\n          \
+    \      \"color\": \"red\",\n                \"value\": 1\n              }\n  \
+    \          ]\n          },\n          \"unit\": \"s\"\n        },\n        \"\
+    overrides\": [\n          {\n            \"matcher\": {\n              \"id\"\
+    : \"byName\",\n              \"options\": \"P95 Latency\"\n            },\n  \
+    \          \"properties\": [\n              {\n                \"id\": \"custom.width\"\
+    ,\n                \"value\": 140\n              },\n              {\n       \
+    \         \"id\": \"custom.cellOptions\",\n                \"value\": {\n    \
+    \              \"mode\": \"gradient\",\n                  \"type\": \"color-background\"\
+    \n                }\n              }\n            ]\n          },\n          {\n\
+    \            \"matcher\": {\n              \"id\": \"byName\",\n             \
+    \ \"options\": \"Handler\"\n            },\n            \"properties\": [\n  \
+    \            {\n                \"id\": \"custom.width\",\n                \"\
+    value\": 300\n              }\n            ]\n          }\n        ]\n      },\n\
+    \      \"gridPos\": {\n        \"h\": 9,\n        \"w\": 24,\n        \"x\": 0,\n\
+    \        \"y\": 29\n      },\n      \"id\": 6,\n      \"options\": {\n       \
+    \ \"cellHeight\": \"sm\",\n        \"footer\": {\n          \"countRows\": false,\n\
+    \          \"fields\": \"\",\n          \"reducer\": [\n            \"sum\"\n\
+    \          ],\n          \"show\": false\n        },\n        \"showHeader\":\
+    \ true,\n        \"sortBy\": [\n          {\n            \"desc\": true,\n   \
+    \         \"displayName\": \"P95 Latency\"\n          }\n        ]\n      },\n\
+    \      \"targets\": [\n        {\n          \"datasource\": {\n            \"\
+    type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n \
+    \         \"editorMode\": \"code\",\n          \"expr\": \"topk(10, histogram_quantile(0.95,\
+    \ sum(rate(http_request_duration_seconds_bucket[5m])) by (le, handler)))\",\n\
+    \          \"format\": \"table\",\n          \"instant\": true,\n          \"\
+    legendFormat\": \"{{handler}}\",\n          \"range\": false,\n          \"refId\"\
+    : \"A\"\n        }\n      ],\n      \"title\": \"Top 10 Slowest Endpoints (P95)\"\
+    ,\n      \"transformations\": [\n        {\n          \"id\": \"organize\",\n\
+    \          \"options\": {\n            \"renameByName\": {\n              \"handler\"\
+    : \"Handler\",\n              \"Value\": \"P95 Latency\"\n            }\n    \
+    \      }\n        }\n      ],\n      \"type\": \"table\"\n    }\n  ],\n  \"refresh\"\
+    : \"10s\",\n  \"schemaVersion\": 38,\n  \"tags\": [\n    \"api\",\n    \"performance\"\
+    ,\n    \"http\",\n    \"infervoyage\"\n  ],\n  \"templating\": {\n    \"list\"\
+    : [\n      {\n        \"current\": {\n          \"selected\": false,\n       \
+    \   \"text\": \"5m\",\n          \"value\": \"5m\"\n        },\n        \"hide\"\
+    : 0,\n        \"includeAll\": false,\n        \"label\": \"Rate Interval\",\n\
+    \        \"multi\": false,\n        \"name\": \"interval\",\n        \"options\"\
+    : [\n          {\n            \"selected\": false,\n            \"text\": \"1m\"\
+    ,\n            \"value\": \"1m\"\n          },\n          {\n            \"selected\"\
+    : true,\n            \"text\": \"5m\",\n            \"value\": \"5m\"\n      \
+    \    },\n          {\n            \"selected\": false,\n            \"text\":\
+    \ \"10m\",\n            \"value\": \"10m\"\n          },\n          {\n      \
+    \      \"selected\": false,\n            \"text\": \"30m\",\n            \"value\"\
+    : \"30m\"\n          }\n        ],\n        \"query\": \"1m,5m,10m,30m\",\n  \
+    \      \"queryValue\": \"\",\n        \"skipUrlSync\": false,\n        \"type\"\
+    : \"custom\"\n      }\n    ]\n  },\n  \"time\": {\n    \"from\": \"now-1h\",\n\
+    \    \"to\": \"now\"\n  },\n  \"timepicker\": {},\n  \"timezone\": \"browser\"\
+    ,\n  \"title\": \"API Performance\",\n  \"uid\": \"api-perf\",\n  \"version\"\
+    : 1,\n  \"weekStart\": \"\"\n}"
+  database-metrics.json: "{\n  \"__inputs\": [\n    {\n      \"name\": \"DS_PROMETHEUS\"\
+    ,\n      \"label\": \"Prometheus\",\n      \"description\": \"\",\n      \"type\"\
+    : \"datasource\",\n      \"pluginId\": \"prometheus\",\n      \"pluginName\":\
+    \ \"Prometheus\"\n    }\n  ],\n  \"__requires\": [\n    {\n      \"type\": \"\
+    grafana\",\n      \"id\": \"grafana\",\n      \"name\": \"Grafana\",\n      \"\
+    version\": \"10.0.0\"\n    },\n    {\n      \"type\": \"datasource\",\n      \"\
+    id\": \"prometheus\",\n      \"name\": \"Prometheus\",\n      \"version\": \"\
+    1.0.0\"\n    },\n    {\n      \"type\": \"panel\",\n      \"id\": \"timeseries\"\
+    ,\n      \"name\": \"Time series\",\n      \"version\": \"\"\n    },\n    {\n\
+    \      \"type\": \"panel\",\n      \"id\": \"gauge\",\n      \"name\": \"Gauge\"\
+    ,\n      \"version\": \"\"\n    },\n    {\n      \"type\": \"panel\",\n      \"\
+    id\": \"stat\",\n      \"name\": \"Stat\",\n      \"version\": \"\"\n    },\n\
+    \    {\n      \"type\": \"panel\",\n      \"id\": \"table\",\n      \"name\":\
+    \ \"Table\",\n      \"version\": \"\"\n    }\n  ],\n  \"annotations\": {\n   \
+    \ \"list\": [\n      {\n        \"builtIn\": 1,\n        \"datasource\": {\n \
+    \         \"type\": \"grafana\",\n          \"uid\": \"-- Grafana --\"\n     \
+    \   },\n        \"enable\": true,\n        \"hide\": true,\n        \"iconColor\"\
+    : \"rgba(0, 211, 255, 1)\",\n        \"name\": \"Annotations & Alerts\",\n   \
+    \     \"type\": \"dashboard\"\n      }\n    ]\n  },\n  \"description\": \"PostgreSQL\
+    \ database health \\u2014 connections, transaction rate, query latency, deadlocks,\
+    \ and replication lag\",\n  \"editable\": true,\n  \"fiscalYearStartMonth\": 0,\n\
+    \  \"graphTooltip\": 1,\n  \"id\": null,\n  \"links\": [],\n  \"panels\": [\n\
+    \    {\n      \"collapsed\": false,\n      \"gridPos\": {\n        \"h\": 1,\n\
+    \        \"w\": 24,\n        \"x\": 0,\n        \"y\": 0\n      },\n      \"id\"\
+    : 100,\n      \"title\": \"Connections\",\n      \"type\": \"row\"\n    },\n \
+    \   {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"\
+    uid\": \"prometheus\"\n      },\n      \"description\": \"Active PostgreSQL connections\
+    \ by state\",\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"\
+    color\": {\n            \"mode\": \"palette-classic\"\n          },\n        \
+    \  \"custom\": {\n            \"axisLabel\": \"connections\",\n            \"\
+    drawStyle\": \"line\",\n            \"fillOpacity\": 15,\n            \"gradientMode\"\
+    : \"opacity\",\n            \"lineInterpolation\": \"smooth\",\n            \"\
+    lineWidth\": 2,\n            \"showPoints\": \"never\",\n            \"spanNulls\"\
+    : false\n          },\n          \"mappings\": [],\n          \"unit\": \"short\"\
+    \n        },\n        \"overrides\": [\n          {\n            \"matcher\":\
+    \ {\n              \"id\": \"byName\",\n              \"options\": \"Active\"\n\
+    \            },\n            \"properties\": [\n              {\n            \
+    \    \"id\": \"color\",\n                \"value\": {\n                  \"fixedColor\"\
+    : \"blue\",\n                  \"mode\": \"fixed\"\n                }\n      \
+    \        }\n            ]\n          },\n          {\n            \"matcher\"\
+    : {\n              \"id\": \"byName\",\n              \"options\": \"Idle\"\n\
+    \            },\n            \"properties\": [\n              {\n            \
+    \    \"id\": \"color\",\n                \"value\": {\n                  \"fixedColor\"\
+    : \"green\",\n                  \"mode\": \"fixed\"\n                }\n     \
+    \         }\n            ]\n          },\n          {\n            \"matcher\"\
+    : {\n              \"id\": \"byName\",\n              \"options\": \"Idle in Transaction\"\
+    \n            },\n            \"properties\": [\n              {\n           \
+    \     \"id\": \"color\",\n                \"value\": {\n                  \"fixedColor\"\
+    : \"yellow\",\n                  \"mode\": \"fixed\"\n                }\n    \
+    \          }\n            ]\n          },\n          {\n            \"matcher\"\
+    : {\n              \"id\": \"byName\",\n              \"options\": \"Waiting\"\
+    \n            },\n            \"properties\": [\n              {\n           \
+    \     \"id\": \"color\",\n                \"value\": {\n                  \"fixedColor\"\
+    : \"red\",\n                  \"mode\": \"fixed\"\n                }\n       \
+    \       }\n            ]\n          }\n        ]\n      },\n      \"gridPos\"\
+    : {\n        \"h\": 8,\n        \"w\": 16,\n        \"x\": 0,\n        \"y\":\
+    \ 1\n      },\n      \"id\": 1,\n      \"options\": {\n        \"legend\": {\n\
+    \          \"calcs\": [\n            \"mean\",\n            \"max\",\n       \
+    \     \"lastNotNull\"\n          ],\n          \"displayMode\": \"table\",\n \
+    \         \"placement\": \"bottom\",\n          \"showLegend\": true\n       \
+    \ },\n        \"tooltip\": {\n          \"mode\": \"multi\",\n          \"sort\"\
+    : \"desc\"\n        }\n      },\n      \"targets\": [\n        {\n          \"\
+    datasource\": {\n            \"type\": \"prometheus\",\n            \"uid\": \"\
+    prometheus\"\n          },\n          \"editorMode\": \"code\",\n          \"\
+    expr\": \"pg_stat_activity_count{state=\\\"active\\\"}\",\n          \"legendFormat\"\
+    : \"Active\",\n          \"range\": true,\n          \"refId\": \"A\"\n      \
+    \  },\n        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"prometheus\"\n          },\n          \"editorMode\"\
+    : \"code\",\n          \"expr\": \"pg_stat_activity_count{state=\\\"idle\\\"}\"\
+    ,\n          \"legendFormat\": \"Idle\",\n          \"range\": true,\n       \
+    \   \"refId\": \"B\"\n        },\n        {\n          \"datasource\": {\n   \
+    \         \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n   \
+    \       },\n          \"editorMode\": \"code\",\n          \"expr\": \"pg_stat_activity_count{state=\\\
+    \"idle in transaction\\\"}\",\n          \"legendFormat\": \"Idle in Transaction\"\
+    ,\n          \"range\": true,\n          \"refId\": \"C\"\n        },\n      \
+    \  {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n   \
+    \         \"uid\": \"prometheus\"\n          },\n          \"editorMode\": \"\
+    code\",\n          \"expr\": \"pg_stat_activity_count{state=\\\"active\\\", wait_event_type!=\\\
+    \"\\\"}\",\n          \"legendFormat\": \"Waiting\",\n          \"range\": true,\n\
+    \          \"refId\": \"D\"\n        }\n      ],\n      \"title\": \"Active /\
+    \ Idle Connections\",\n      \"type\": \"timeseries\"\n    },\n    {\n      \"\
+    datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\
+    \n      },\n      \"description\": \"Percentage of max_connections currently in\
+    \ use\",\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\"\
+    : {\n            \"mode\": \"thresholds\"\n          },\n          \"mappings\"\
+    : [],\n          \"max\": 100,\n          \"min\": 0,\n          \"thresholds\"\
+    : {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              },\n              {\n                \"color\": \"yellow\",\n \
+    \               \"value\": 70\n              },\n              {\n           \
+    \     \"color\": \"red\",\n                \"value\": 90\n              }\n  \
+    \          ]\n          },\n          \"unit\": \"percent\"\n        },\n    \
+    \    \"overrides\": []\n      },\n      \"gridPos\": {\n        \"h\": 8,\n  \
+    \      \"w\": 8,\n        \"x\": 16,\n        \"y\": 1\n      },\n      \"id\"\
+    : 2,\n      \"options\": {\n        \"minVizHeight\": 75,\n        \"minVizWidth\"\
+    : 75,\n        \"orientation\": \"auto\",\n        \"reduceOptions\": {\n    \
+    \      \"calcs\": [\n            \"lastNotNull\"\n          ],\n          \"fields\"\
+    : \"\",\n          \"values\": false\n        },\n        \"showThresholdLabels\"\
+    : true,\n        \"showThresholdMarkers\": true\n      },\n      \"targets\":\
+    \ [\n        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"prometheus\"\n          },\n          \"editorMode\"\
+    : \"code\",\n          \"expr\": \"100 * sum(pg_stat_activity_count) / pg_settings_max_connections\"\
+    ,\n          \"instant\": true,\n          \"legendFormat\": \"Max Connections\
+    \ Used %\",\n          \"range\": false,\n          \"refId\": \"A\"\n       \
+    \ }\n      ],\n      \"title\": \"Max Connections Used %\",\n      \"type\": \"\
+    gauge\"\n    },\n    {\n      \"collapsed\": false,\n      \"gridPos\": {\n  \
+    \      \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 9\n  \
+    \    },\n      \"id\": 101,\n      \"title\": \"Transaction & Query Performance\"\
+    ,\n      \"type\": \"row\"\n    },\n    {\n      \"datasource\": {\n        \"\
+    type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n      \"description\"\
+    : \"Database transaction commits and rollbacks per second\",\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": {\n            \"mode\": \"\
+    palette-classic\"\n          },\n          \"custom\": {\n            \"axisLabel\"\
+    : \"txn/s\",\n            \"drawStyle\": \"line\",\n            \"fillOpacity\"\
+    : 12,\n            \"gradientMode\": \"opacity\",\n            \"lineInterpolation\"\
+    : \"smooth\",\n            \"lineWidth\": 2,\n            \"showPoints\": \"never\"\
+    ,\n            \"spanNulls\": false\n          },\n          \"mappings\": [],\n\
+    \          \"unit\": \"reqps\"\n        },\n        \"overrides\": [\n       \
+    \   {\n            \"matcher\": {\n              \"id\": \"byName\",\n       \
+    \       \"options\": \"Commits\"\n            },\n            \"properties\":\
+    \ [\n              {\n                \"id\": \"color\",\n                \"value\"\
+    : {\n                  \"fixedColor\": \"green\",\n                  \"mode\"\
+    : \"fixed\"\n                }\n              }\n            ]\n          },\n\
+    \          {\n            \"matcher\": {\n              \"id\": \"byName\",\n\
+    \              \"options\": \"Rollbacks\"\n            },\n            \"properties\"\
+    : [\n              {\n                \"id\": \"color\",\n                \"value\"\
+    : {\n                  \"fixedColor\": \"red\",\n                  \"mode\": \"\
+    fixed\"\n                }\n              }\n            ]\n          }\n    \
+    \    ]\n      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n\
+    \        \"x\": 0,\n        \"y\": 10\n      },\n      \"id\": 3,\n      \"options\"\
+    : {\n        \"legend\": {\n          \"calcs\": [\n            \"mean\",\n  \
+    \          \"max\",\n            \"lastNotNull\"\n          ],\n          \"displayMode\"\
+    : \"table\",\n          \"placement\": \"bottom\",\n          \"showLegend\":\
+    \ true\n        },\n        \"tooltip\": {\n          \"mode\": \"multi\",\n \
+    \         \"sort\": \"desc\"\n        }\n      },\n      \"targets\": [\n    \
+    \    {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n \
+    \           \"uid\": \"prometheus\"\n          },\n          \"editorMode\": \"\
+    code\",\n          \"expr\": \"sum(rate(pg_stat_database_xact_commit[5m]))\",\n\
+    \          \"legendFormat\": \"Commits\",\n          \"range\": true,\n      \
+    \    \"refId\": \"A\"\n        },\n        {\n          \"datasource\": {\n  \
+    \          \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n  \
+    \        },\n          \"editorMode\": \"code\",\n          \"expr\": \"sum(rate(pg_stat_database_xact_rollback[5m]))\"\
+    ,\n          \"legendFormat\": \"Rollbacks\",\n          \"range\": true,\n  \
+    \        \"refId\": \"B\"\n        }\n      ],\n      \"title\": \"Transaction\
+    \ Rate (Commits / Rollbacks)\",\n      \"type\": \"timeseries\"\n    },\n    {\n\
+    \      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\":\
+    \ \"prometheus\"\n      },\n      \"description\": \"P95 query duration from pg_stat_statements\
+    \ (requires pg_stat_statements extension)\",\n      \"fieldConfig\": {\n     \
+    \   \"defaults\": {\n          \"color\": {\n            \"mode\": \"palette-classic\"\
+    \n          },\n          \"custom\": {\n            \"axisLabel\": \"duration\
+    \ (ms)\",\n            \"drawStyle\": \"line\",\n            \"fillOpacity\":\
+    \ 10,\n            \"gradientMode\": \"opacity\",\n            \"lineInterpolation\"\
+    : \"smooth\",\n            \"lineWidth\": 2,\n            \"showPoints\": \"never\"\
+    ,\n            \"spanNulls\": false\n          },\n          \"mappings\": [],\n\
+    \          \"unit\": \"ms\"\n        },\n        \"overrides\": []\n      },\n\
+    \      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\": 12,\n\
+    \        \"y\": 10\n      },\n      \"id\": 4,\n      \"options\": {\n       \
+    \ \"legend\": {\n          \"calcs\": [\n            \"mean\",\n            \"\
+    max\",\n            \"lastNotNull\"\n          ],\n          \"displayMode\":\
+    \ \"table\",\n          \"placement\": \"bottom\",\n          \"showLegend\":\
+    \ true\n        },\n        \"tooltip\": {\n          \"mode\": \"multi\",\n \
+    \         \"sort\": \"desc\"\n        }\n      },\n      \"targets\": [\n    \
+    \    {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n \
+    \           \"uid\": \"prometheus\"\n          },\n          \"editorMode\": \"\
+    code\",\n          \"expr\": \"histogram_quantile(0.95, sum(rate(pg_stat_statements_seconds_bucket[5m]))\
+    \ by (le)) * 1000\",\n          \"legendFormat\": \"P95 Query Duration\",\n  \
+    \        \"range\": true,\n          \"refId\": \"A\"\n        },\n        {\n\
+    \          \"datasource\": {\n            \"type\": \"prometheus\",\n        \
+    \    \"uid\": \"prometheus\"\n          },\n          \"editorMode\": \"code\"\
+    ,\n          \"expr\": \"histogram_quantile(0.50, sum(rate(pg_stat_statements_seconds_bucket[5m]))\
+    \ by (le)) * 1000\",\n          \"legendFormat\": \"P50 Query Duration\",\n  \
+    \        \"range\": true,\n          \"refId\": \"B\"\n        }\n      ],\n \
+    \     \"title\": \"Query Duration (P50 / P95)\",\n      \"type\": \"timeseries\"\
+    \n    },\n    {\n      \"collapsed\": false,\n      \"gridPos\": {\n        \"\
+    h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 18\n      },\n\
+    \      \"id\": 102,\n      \"title\": \"Errors & Replication\",\n      \"type\"\
+    : \"row\"\n    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\"\
+    ,\n        \"uid\": \"prometheus\"\n      },\n      \"description\": \"Deadlock\
+    \ events per second across all databases\",\n      \"fieldConfig\": {\n      \
+    \  \"defaults\": {\n          \"color\": {\n            \"mode\": \"thresholds\"\
+    \n          },\n          \"custom\": {\n            \"axisLabel\": \"deadlocks/s\"\
+    ,\n            \"drawStyle\": \"line\",\n            \"fillOpacity\": 20,\n  \
+    \          \"gradientMode\": \"opacity\",\n            \"lineInterpolation\":\
+    \ \"smooth\",\n            \"lineWidth\": 2,\n            \"showPoints\": \"auto\"\
+    ,\n            \"spanNulls\": false\n          },\n          \"mappings\": [],\n\
+    \          \"thresholds\": {\n            \"mode\": \"absolute\",\n          \
+    \  \"steps\": [\n              {\n                \"color\": \"green\",\n    \
+    \            \"value\": null\n              },\n              {\n            \
+    \    \"color\": \"red\",\n                \"value\": 0.01\n              }\n \
+    \           ]\n          },\n          \"unit\": \"short\"\n        },\n     \
+    \   \"overrides\": [\n          {\n            \"matcher\": {\n              \"\
+    id\": \"byName\",\n              \"options\": \"Deadlocks/s\"\n            },\n\
+    \            \"properties\": [\n              {\n                \"id\": \"color\"\
+    ,\n                \"value\": {\n                  \"fixedColor\": \"red\",\n\
+    \                  \"mode\": \"fixed\"\n                }\n              }\n \
+    \           ]\n          }\n        ]\n      },\n      \"gridPos\": {\n      \
+    \  \"h\": 8,\n        \"w\": 12,\n        \"x\": 0,\n        \"y\": 19\n     \
+    \ },\n      \"id\": 5,\n      \"options\": {\n        \"legend\": {\n        \
+    \  \"calcs\": [\n            \"mean\",\n            \"max\"\n          ],\n  \
+    \        \"displayMode\": \"table\",\n          \"placement\": \"bottom\",\n \
+    \         \"showLegend\": true\n        },\n        \"tooltip\": {\n         \
+    \ \"mode\": \"multi\",\n          \"sort\": \"desc\"\n        }\n      },\n  \
+    \    \"targets\": [\n        {\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n       \
+    \   \"editorMode\": \"code\",\n          \"expr\": \"sum(rate(pg_stat_database_deadlocks[5m]))\"\
+    ,\n          \"legendFormat\": \"Deadlocks/s\",\n          \"range\": true,\n\
+    \          \"refId\": \"A\"\n        }\n      ],\n      \"title\": \"Deadlocks\"\
+    ,\n      \"type\": \"timeseries\"\n    },\n    {\n      \"datasource\": {\n  \
+    \      \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n\
+    \      \"description\": \"Rows fetched/returned/inserted/updated/deleted per second\"\
+    ,\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\": {\n\
+    \            \"mode\": \"palette-classic\"\n          },\n          \"custom\"\
+    : {\n            \"axisLabel\": \"rows/s\",\n            \"drawStyle\": \"line\"\
+    ,\n            \"fillOpacity\": 8,\n            \"gradientMode\": \"none\",\n\
+    \            \"lineInterpolation\": \"smooth\",\n            \"lineWidth\": 1,\n\
+    \            \"showPoints\": \"never\",\n            \"spanNulls\": false\n  \
+    \        },\n          \"mappings\": [],\n          \"unit\": \"reqps\"\n    \
+    \    },\n        \"overrides\": []\n      },\n      \"gridPos\": {\n        \"\
+    h\": 8,\n        \"w\": 12,\n        \"x\": 12,\n        \"y\": 19\n      },\n\
+    \      \"id\": 6,\n      \"options\": {\n        \"legend\": {\n          \"calcs\"\
+    : [\n            \"mean\",\n            \"max\"\n          ],\n          \"displayMode\"\
+    : \"table\",\n          \"placement\": \"bottom\",\n          \"showLegend\":\
+    \ true\n        },\n        \"tooltip\": {\n          \"mode\": \"multi\",\n \
+    \         \"sort\": \"desc\"\n        }\n      },\n      \"targets\": [\n    \
+    \    {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n \
+    \           \"uid\": \"prometheus\"\n          },\n          \"editorMode\": \"\
+    code\",\n          \"expr\": \"sum(rate(pg_stat_database_tup_fetched[5m]))\",\n\
+    \          \"legendFormat\": \"Rows Fetched\",\n          \"range\": true,\n \
+    \         \"refId\": \"A\"\n        },\n        {\n          \"datasource\": {\n\
+    \            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n\
+    \          },\n          \"editorMode\": \"code\",\n          \"expr\": \"sum(rate(pg_stat_database_tup_inserted[5m]))\"\
+    ,\n          \"legendFormat\": \"Rows Inserted\",\n          \"range\": true,\n\
+    \          \"refId\": \"B\"\n        },\n        {\n          \"datasource\":\
+    \ {\n            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\
+    \n          },\n          \"editorMode\": \"code\",\n          \"expr\": \"sum(rate(pg_stat_database_tup_updated[5m]))\"\
+    ,\n          \"legendFormat\": \"Rows Updated\",\n          \"range\": true,\n\
+    \          \"refId\": \"C\"\n        },\n        {\n          \"datasource\":\
+    \ {\n            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\
+    \n          },\n          \"editorMode\": \"code\",\n          \"expr\": \"sum(rate(pg_stat_database_tup_deleted[5m]))\"\
+    ,\n          \"legendFormat\": \"Rows Deleted\",\n          \"range\": true,\n\
+    \          \"refId\": \"D\"\n        }\n      ],\n      \"title\": \"Row Operations\
+    \ Rate\",\n      \"type\": \"timeseries\"\n    },\n    {\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n    \
+    \  },\n      \"description\": \"Replication lag in seconds for any standby replicas\
+    \ (0 if no replicas)\",\n      \"fieldConfig\": {\n        \"defaults\": {\n \
+    \         \"color\": {\n            \"mode\": \"thresholds\"\n          },\n \
+    \         \"custom\": {\n            \"axisLabel\": \"lag (s)\",\n           \
+    \ \"drawStyle\": \"line\",\n            \"fillOpacity\": 15,\n            \"gradientMode\"\
+    : \"opacity\",\n            \"lineInterpolation\": \"smooth\",\n            \"\
+    lineWidth\": 2,\n            \"showPoints\": \"never\",\n            \"spanNulls\"\
+    : true\n          },\n          \"mappings\": [],\n          \"thresholds\": {\n\
+    \            \"mode\": \"absolute\",\n            \"steps\": [\n             \
+    \ {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              },\n              {\n                \"color\": \"yellow\",\n \
+    \               \"value\": 5\n              },\n              {\n            \
+    \    \"color\": \"red\",\n                \"value\": 30\n              }\n   \
+    \         ]\n          },\n          \"unit\": \"s\"\n        },\n        \"overrides\"\
+    : []\n      },\n      \"gridPos\": {\n        \"h\": 5,\n        \"w\": 24,\n\
+    \        \"x\": 0,\n        \"y\": 27\n      },\n      \"id\": 7,\n      \"options\"\
+    : {\n        \"legend\": {\n          \"calcs\": [\n            \"mean\",\n  \
+    \          \"max\",\n            \"lastNotNull\"\n          ],\n          \"displayMode\"\
+    : \"table\",\n          \"placement\": \"bottom\",\n          \"showLegend\":\
+    \ true\n        },\n        \"tooltip\": {\n          \"mode\": \"multi\",\n \
+    \         \"sort\": \"desc\"\n        }\n      },\n      \"targets\": [\n    \
+    \    {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n \
+    \           \"uid\": \"prometheus\"\n          },\n          \"editorMode\": \"\
+    code\",\n          \"expr\": \"pg_replication_lag or vector(0)\",\n          \"\
+    legendFormat\": \"Replication Lag ({{application_name}})\",\n          \"range\"\
+    : true,\n          \"refId\": \"A\"\n        }\n      ],\n      \"title\": \"\
+    Replication Lag\",\n      \"type\": \"timeseries\"\n    }\n  ],\n  \"refresh\"\
+    : \"10s\",\n  \"schemaVersion\": 38,\n  \"tags\": [\n    \"postgresql\",\n   \
+    \ \"database\",\n    \"infervoyage\"\n  ],\n  \"templating\": {\n    \"list\"\
+    : [\n      {\n        \"current\": {\n          \"selected\": false,\n       \
+    \   \"text\": \"All\",\n          \"value\": \"$__all\"\n        },\n        \"\
+    datasource\": {\n          \"type\": \"prometheus\",\n          \"uid\": \"prometheus\"\
+    \n        },\n        \"definition\": \"label_values(pg_stat_database_xact_commit,\
+    \ datname)\",\n        \"hide\": 0,\n        \"includeAll\": true,\n        \"\
+    label\": \"Database\",\n        \"multi\": true,\n        \"name\": \"datname\"\
+    ,\n        \"options\": [],\n        \"query\": {\n          \"qryType\": 1,\n\
+    \          \"query\": \"label_values(pg_stat_database_xact_commit, datname)\"\
+    ,\n          \"refId\": \"StandardVariableQuery\"\n        },\n        \"refresh\"\
+    : 2,\n        \"regex\": \"\",\n        \"skipUrlSync\": false,\n        \"sort\"\
+    : 1,\n        \"type\": \"query\"\n      }\n    ]\n  },\n  \"time\": {\n    \"\
+    from\": \"now-1h\",\n    \"to\": \"now\"\n  },\n  \"timepicker\": {},\n  \"timezone\"\
+    : \"browser\",\n  \"title\": \"PostgreSQL Metrics\",\n  \"uid\": \"db-metrics\"\
+    ,\n  \"version\": 1,\n  \"weekStart\": \"\"\n}"
+  inference-performance.json: "{\n  \"__inputs\": [\n    {\n      \"name\": \"DS_PROMETHEUS\"\
+    ,\n      \"label\": \"Prometheus\",\n      \"description\": \"\",\n      \"type\"\
+    : \"datasource\",\n      \"pluginId\": \"prometheus\",\n      \"pluginName\":\
+    \ \"Prometheus\"\n    }\n  ],\n  \"__requires\": [\n    {\n      \"type\": \"\
+    grafana\",\n      \"id\": \"grafana\",\n      \"name\": \"Grafana\",\n      \"\
+    version\": \"10.0.0\"\n    },\n    {\n      \"type\": \"datasource\",\n      \"\
+    id\": \"prometheus\",\n      \"name\": \"Prometheus\",\n      \"version\": \"\
+    1.0.0\"\n    },\n    {\n      \"type\": \"panel\",\n      \"id\": \"timeseries\"\
+    ,\n      \"name\": \"Time series\",\n      \"version\": \"\"\n    },\n    {\n\
+    \      \"type\": \"panel\",\n      \"id\": \"gauge\",\n      \"name\": \"Gauge\"\
+    ,\n      \"version\": \"\"\n    },\n    {\n      \"type\": \"panel\",\n      \"\
+    id\": \"heatmap\",\n      \"name\": \"Heatmap\",\n      \"version\": \"\"\n  \
+    \  },\n    {\n      \"type\": \"panel\",\n      \"id\": \"stat\",\n      \"name\"\
+    : \"Stat\",\n      \"version\": \"\"\n    }\n  ],\n  \"annotations\": {\n    \"\
+    list\": [\n      {\n        \"builtIn\": 1,\n        \"datasource\": {\n     \
+    \     \"type\": \"grafana\",\n          \"uid\": \"-- Grafana --\"\n        },\n\
+    \        \"enable\": true,\n        \"hide\": true,\n        \"iconColor\": \"\
+    rgba(0, 211, 255, 1)\",\n        \"name\": \"Annotations & Alerts\",\n       \
+    \ \"type\": \"dashboard\"\n      }\n    ]\n  },\n  \"description\": \"AI inference\
+    \ performance \\u2014 TTFT, token throughput, duration percentiles, queue depth,\
+    \ and error rates for Ollama/llama3\",\n  \"editable\": true,\n  \"fiscalYearStartMonth\"\
+    : 0,\n  \"graphTooltip\": 1,\n  \"id\": null,\n  \"links\": [],\n  \"panels\"\
+    : [\n    {\n      \"collapsed\": false,\n      \"gridPos\": {\n        \"h\":\
+    \ 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 0\n      },\n    \
+    \  \"id\": 100,\n      \"title\": \"Time to First Token (TTFT)\",\n      \"type\"\
+    : \"row\"\n    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\"\
+    ,\n        \"uid\": \"prometheus\"\n      },\n      \"description\": \"P50/P95/P99\
+    \ time-to-first-token for llama3 model\",\n      \"fieldConfig\": {\n        \"\
+    defaults\": {\n          \"color\": {\n            \"mode\": \"palette-classic\"\
+    \n          },\n          \"custom\": {\n            \"axisLabel\": \"TTFT (s)\"\
+    ,\n            \"drawStyle\": \"line\",\n            \"fillOpacity\": 12,\n  \
+    \          \"gradientMode\": \"opacity\",\n            \"lineInterpolation\":\
+    \ \"smooth\",\n            \"lineWidth\": 2,\n            \"showPoints\": \"never\"\
+    ,\n            \"spanNulls\": false\n          },\n          \"mappings\": [],\n\
+    \          \"thresholds\": {\n            \"mode\": \"absolute\",\n          \
+    \  \"steps\": [\n              {\n                \"color\": \"green\",\n    \
+    \            \"value\": null\n              },\n              {\n            \
+    \    \"color\": \"yellow\",\n                \"value\": 15\n              },\n\
+    \              {\n                \"color\": \"red\",\n                \"value\"\
+    : 30\n              }\n            ]\n          },\n          \"unit\": \"s\"\n\
+    \        },\n        \"overrides\": [\n          {\n            \"matcher\": {\n\
+    \              \"id\": \"byName\",\n              \"options\": \"P99 TTFT\"\n\
+    \            },\n            \"properties\": [\n              {\n            \
+    \    \"id\": \"color\",\n                \"value\": {\n                  \"fixedColor\"\
+    : \"red\",\n                  \"mode\": \"fixed\"\n                }\n       \
+    \       }\n            ]\n          },\n          {\n            \"matcher\":\
+    \ {\n              \"id\": \"byName\",\n              \"options\": \"P95 TTFT\"\
+    \n            },\n            \"properties\": [\n              {\n           \
+    \     \"id\": \"color\",\n                \"value\": {\n                  \"fixedColor\"\
+    : \"orange\",\n                  \"mode\": \"fixed\"\n                }\n    \
+    \          }\n            ]\n          },\n          {\n            \"matcher\"\
+    : {\n              \"id\": \"byName\",\n              \"options\": \"P50 TTFT\"\
+    \n            },\n            \"properties\": [\n              {\n           \
+    \     \"id\": \"color\",\n                \"value\": {\n                  \"fixedColor\"\
+    : \"green\",\n                  \"mode\": \"fixed\"\n                }\n     \
+    \         }\n            ]\n          }\n        ]\n      },\n      \"gridPos\"\
+    : {\n        \"h\": 9,\n        \"w\": 16,\n        \"x\": 0,\n        \"y\":\
+    \ 1\n      },\n      \"id\": 1,\n      \"options\": {\n        \"legend\": {\n\
+    \          \"calcs\": [\n            \"mean\",\n            \"max\",\n       \
+    \     \"lastNotNull\"\n          ],\n          \"displayMode\": \"table\",\n \
+    \         \"placement\": \"bottom\",\n          \"showLegend\": true\n       \
+    \ },\n        \"tooltip\": {\n          \"mode\": \"multi\",\n          \"sort\"\
+    : \"desc\"\n        }\n      },\n      \"targets\": [\n        {\n          \"\
+    datasource\": {\n            \"type\": \"prometheus\",\n            \"uid\": \"\
+    prometheus\"\n          },\n          \"editorMode\": \"code\",\n          \"\
+    expr\": \"histogram_quantile(0.50, sum(rate(inference_ttft_seconds_bucket{model=~\\\
+    \"$model\\\"}[5m])) by (le, model))\",\n          \"instant\": false,\n      \
+    \    \"legendFormat\": \"P50 TTFT - {{model}}\",\n          \"range\": true,\n\
+    \          \"refId\": \"A\"\n        },\n        {\n          \"datasource\":\
+    \ {\n            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\
+    \n          },\n          \"editorMode\": \"code\",\n          \"expr\": \"histogram_quantile(0.95,\
+    \ sum(rate(inference_ttft_seconds_bucket{model=~\\\"$model\\\"}[5m])) by (le,\
+    \ model))\",\n          \"instant\": false,\n          \"legendFormat\": \"P95\
+    \ TTFT - {{model}}\",\n          \"range\": true,\n          \"refId\": \"B\"\n\
+    \        },\n        {\n          \"datasource\": {\n            \"type\": \"\
+    prometheus\",\n            \"uid\": \"prometheus\"\n          },\n          \"\
+    editorMode\": \"code\",\n          \"expr\": \"histogram_quantile(0.99, sum(rate(inference_ttft_seconds_bucket{model=~\\\
+    \"$model\\\"}[5m])) by (le, model))\",\n          \"instant\": false,\n      \
+    \    \"legendFormat\": \"P99 TTFT - {{model}}\",\n          \"range\": true,\n\
+    \          \"refId\": \"C\"\n        }\n      ],\n      \"title\": \"TTFT Percentiles\
+    \ (P50 / P95 / P99)\",\n      \"type\": \"timeseries\"\n    },\n    {\n      \"\
+    datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\
+    \n      },\n      \"description\": \"Current P95 TTFT \\u2014 target \\u2264 30s\
+    \ on 7B Q4 model\",\n      \"fieldConfig\": {\n        \"defaults\": {\n     \
+    \     \"color\": {\n            \"mode\": \"thresholds\"\n          },\n     \
+    \     \"mappings\": [],\n          \"thresholds\": {\n            \"mode\": \"\
+    absolute\",\n            \"steps\": [\n              {\n                \"color\"\
+    : \"green\",\n                \"value\": null\n              },\n            \
+    \  {\n                \"color\": \"yellow\",\n                \"value\": 20\n\
+    \              },\n              {\n                \"color\": \"red\",\n    \
+    \            \"value\": 30\n              }\n            ]\n          },\n   \
+    \       \"unit\": \"s\"\n        },\n        \"overrides\": []\n      },\n   \
+    \   \"gridPos\": {\n        \"h\": 9,\n        \"w\": 8,\n        \"x\": 16,\n\
+    \        \"y\": 1\n      },\n      \"id\": 2,\n      \"options\": {\n        \"\
+    minVizHeight\": 75,\n        \"minVizWidth\": 75,\n        \"orientation\": \"\
+    auto\",\n        \"reduceOptions\": {\n          \"calcs\": [\n            \"\
+    lastNotNull\"\n          ],\n          \"fields\": \"\",\n          \"values\"\
+    : false\n        },\n        \"showThresholdLabels\": true,\n        \"showThresholdMarkers\"\
+    : true\n      },\n      \"targets\": [\n        {\n          \"datasource\": {\n\
+    \            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n\
+    \          },\n          \"editorMode\": \"code\",\n          \"expr\": \"histogram_quantile(0.95,\
+    \ sum(rate(inference_ttft_seconds_bucket{model=~\\\"$model\\\"}[5m])) by (le))\"\
+    ,\n          \"instant\": true,\n          \"legendFormat\": \"P95 TTFT\",\n \
+    \         \"range\": false,\n          \"refId\": \"A\"\n        }\n      ],\n\
+    \      \"title\": \"P95 TTFT (Current)\",\n      \"type\": \"gauge\"\n    },\n\
+    \    {\n      \"collapsed\": false,\n      \"gridPos\": {\n        \"h\": 1,\n\
+    \        \"w\": 24,\n        \"x\": 0,\n        \"y\": 10\n      },\n      \"\
+    id\": 101,\n      \"title\": \"Inference Duration & Throughput\",\n      \"type\"\
+    : \"row\"\n    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\"\
+    ,\n        \"uid\": \"prometheus\"\n      },\n      \"description\": \"Total inference\
+    \ request duration percentiles\",\n      \"fieldConfig\": {\n        \"defaults\"\
+    : {\n          \"color\": {\n            \"mode\": \"palette-classic\"\n     \
+    \     },\n          \"custom\": {\n            \"axisLabel\": \"duration (s)\"\
+    ,\n            \"drawStyle\": \"line\",\n            \"fillOpacity\": 10,\n  \
+    \          \"gradientMode\": \"opacity\",\n            \"lineInterpolation\":\
+    \ \"smooth\",\n            \"lineWidth\": 2,\n            \"showPoints\": \"never\"\
+    ,\n            \"spanNulls\": false\n          },\n          \"mappings\": [],\n\
+    \          \"unit\": \"s\"\n        },\n        \"overrides\": [\n          {\n\
+    \            \"matcher\": {\n              \"id\": \"byName\",\n             \
+    \ \"options\": \"P99\"\n            },\n            \"properties\": [\n      \
+    \        {\n                \"id\": \"color\",\n                \"value\": {\n\
+    \                  \"fixedColor\": \"red\",\n                  \"mode\": \"fixed\"\
+    \n                }\n              }\n            ]\n          },\n          {\n\
+    \            \"matcher\": {\n              \"id\": \"byName\",\n             \
+    \ \"options\": \"P95\"\n            },\n            \"properties\": [\n      \
+    \        {\n                \"id\": \"color\",\n                \"value\": {\n\
+    \                  \"fixedColor\": \"orange\",\n                  \"mode\": \"\
+    fixed\"\n                }\n              }\n            ]\n          },\n   \
+    \       {\n            \"matcher\": {\n              \"id\": \"byName\",\n   \
+    \           \"options\": \"P50\"\n            },\n            \"properties\":\
+    \ [\n              {\n                \"id\": \"color\",\n                \"value\"\
+    : {\n                  \"fixedColor\": \"green\",\n                  \"mode\"\
+    : \"fixed\"\n                }\n              }\n            ]\n          }\n\
+    \        ]\n      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\":\
+    \ 12,\n        \"x\": 0,\n        \"y\": 11\n      },\n      \"id\": 3,\n    \
+    \  \"options\": {\n        \"legend\": {\n          \"calcs\": [\n           \
+    \ \"mean\",\n            \"max\",\n            \"lastNotNull\"\n          ],\n\
+    \          \"displayMode\": \"table\",\n          \"placement\": \"bottom\",\n\
+    \          \"showLegend\": true\n        },\n        \"tooltip\": {\n        \
+    \  \"mode\": \"multi\",\n          \"sort\": \"desc\"\n        }\n      },\n \
+    \     \"targets\": [\n        {\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n       \
+    \   \"editorMode\": \"code\",\n          \"expr\": \"histogram_quantile(0.50,\
+    \ sum(rate(inference_duration_seconds_bucket{model=~\\\"$model\\\"}[5m])) by (le,\
+    \ model))\",\n          \"legendFormat\": \"P50 - {{model}}\",\n          \"range\"\
+    : true,\n          \"refId\": \"A\"\n        },\n        {\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\
+    \n          },\n          \"editorMode\": \"code\",\n          \"expr\": \"histogram_quantile(0.95,\
+    \ sum(rate(inference_duration_seconds_bucket{model=~\\\"$model\\\"}[5m])) by (le,\
+    \ model))\",\n          \"legendFormat\": \"P95 - {{model}}\",\n          \"range\"\
+    : true,\n          \"refId\": \"B\"\n        },\n        {\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\
+    \n          },\n          \"editorMode\": \"code\",\n          \"expr\": \"histogram_quantile(0.99,\
+    \ sum(rate(inference_duration_seconds_bucket{model=~\\\"$model\\\"}[5m])) by (le,\
+    \ model))\",\n          \"legendFormat\": \"P99 - {{model}}\",\n          \"range\"\
+    : true,\n          \"refId\": \"C\"\n        }\n      ],\n      \"title\": \"\
+    Total Inference Duration (P50 / P95 / P99)\",\n      \"type\": \"timeseries\"\n\
+    \    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n \
+    \       \"uid\": \"prometheus\"\n      },\n      \"description\": \"Tokens generated\
+    \ per second across all inference requests\",\n      \"fieldConfig\": {\n    \
+    \    \"defaults\": {\n          \"color\": {\n            \"mode\": \"palette-classic\"\
+    \n          },\n          \"custom\": {\n            \"axisLabel\": \"tokens/s\"\
+    ,\n            \"drawStyle\": \"line\",\n            \"fillOpacity\": 15,\n  \
+    \          \"gradientMode\": \"opacity\",\n            \"lineInterpolation\":\
+    \ \"smooth\",\n            \"lineWidth\": 2,\n            \"showPoints\": \"never\"\
+    ,\n            \"spanNulls\": false\n          },\n          \"mappings\": [],\n\
+    \          \"unit\": \"short\"\n        },\n        \"overrides\": []\n      },\n\
+    \      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\": 12,\n\
+    \        \"y\": 11\n      },\n      \"id\": 4,\n      \"options\": {\n       \
+    \ \"legend\": {\n          \"calcs\": [\n            \"mean\",\n            \"\
+    max\",\n            \"lastNotNull\"\n          ],\n          \"displayMode\":\
+    \ \"table\",\n          \"placement\": \"bottom\",\n          \"showLegend\":\
+    \ true\n        },\n        \"tooltip\": {\n          \"mode\": \"multi\",\n \
+    \         \"sort\": \"desc\"\n        }\n      },\n      \"targets\": [\n    \
+    \    {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n \
+    \           \"uid\": \"prometheus\"\n          },\n          \"editorMode\": \"\
+    code\",\n          \"expr\": \"sum(rate(inference_tokens_total{model=~\\\"$model\\\
+    \", type=\\\"output\\\"}[5m])) by (model)\",\n          \"legendFormat\": \"Output\
+    \ Tokens/s - {{model}}\",\n          \"range\": true,\n          \"refId\": \"\
+    A\"\n        },\n        {\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n       \
+    \   \"editorMode\": \"code\",\n          \"expr\": \"sum(rate(inference_tokens_total{model=~\\\
+    \"$model\\\", type=\\\"input\\\"}[5m])) by (model)\",\n          \"legendFormat\"\
+    : \"Input Tokens/s - {{model}}\",\n          \"range\": true,\n          \"refId\"\
+    : \"B\"\n        }\n      ],\n      \"title\": \"Tokens per Second (Input / Output)\"\
+    ,\n      \"type\": \"timeseries\"\n    },\n    {\n      \"collapsed\": false,\n\
+    \      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n\
+    \        \"y\": 19\n      },\n      \"id\": 102,\n      \"title\": \"Concurrency\
+    \ & Queue\",\n      \"type\": \"row\"\n    },\n    {\n      \"datasource\": {\n\
+    \        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n\
+    \      \"description\": \"Number of inference requests currently in progress\"\
+    ,\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\": {\n\
+    \            \"mode\": \"thresholds\"\n          },\n          \"mappings\": [],\n\
+    \          \"thresholds\": {\n            \"mode\": \"absolute\",\n          \
+    \  \"steps\": [\n              {\n                \"color\": \"green\",\n    \
+    \            \"value\": null\n              },\n              {\n            \
+    \    \"color\": \"yellow\",\n                \"value\": 5\n              },\n\
+    \              {\n                \"color\": \"red\",\n                \"value\"\
+    : 10\n              }\n            ]\n          },\n          \"unit\": \"short\"\
+    \n        },\n        \"overrides\": []\n      },\n      \"gridPos\": {\n    \
+    \    \"h\": 7,\n        \"w\": 8,\n        \"x\": 0,\n        \"y\": 20\n    \
+    \  },\n      \"id\": 5,\n      \"options\": {\n        \"colorMode\": \"background\"\
+    ,\n        \"graphMode\": \"area\",\n        \"justifyMode\": \"center\",\n  \
+    \      \"orientation\": \"auto\",\n        \"reduceOptions\": {\n          \"\
+    calcs\": [\n            \"lastNotNull\"\n          ],\n          \"fields\": \"\
+    \",\n          \"values\": false\n        },\n        \"textMode\": \"auto\"\n\
+    \      },\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n    \
+    \      },\n          \"editorMode\": \"code\",\n          \"expr\": \"sum(inference_requests_in_flight{model=~\\\
+    \"$model\\\"}) or vector(0)\",\n          \"instant\": true,\n          \"legendFormat\"\
+    : \"In-Flight\",\n          \"range\": false,\n          \"refId\": \"A\"\n  \
+    \      }\n      ],\n      \"title\": \"Concurrent Inference Requests\",\n    \
+    \  \"type\": \"stat\"\n    },\n    {\n      \"datasource\": {\n        \"type\"\
+    : \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n      \"description\"\
+    : \"Requests waiting in the Ollama request queue\",\n      \"fieldConfig\": {\n\
+    \        \"defaults\": {\n          \"color\": {\n            \"mode\": \"thresholds\"\
+    \n          },\n          \"mappings\": [],\n          \"thresholds\": {\n   \
+    \         \"mode\": \"absolute\",\n            \"steps\": [\n              {\n\
+    \                \"color\": \"green\",\n                \"value\": null\n    \
+    \          },\n              {\n                \"color\": \"yellow\",\n     \
+    \           \"value\": 3\n              },\n              {\n                \"\
+    color\": \"red\",\n                \"value\": 8\n              }\n           \
+    \ ]\n          },\n          \"unit\": \"short\"\n        },\n        \"overrides\"\
+    : []\n      },\n      \"gridPos\": {\n        \"h\": 7,\n        \"w\": 8,\n \
+    \       \"x\": 8,\n        \"y\": 20\n      },\n      \"id\": 6,\n      \"options\"\
+    : {\n        \"colorMode\": \"background\",\n        \"graphMode\": \"area\",\n\
+    \        \"justifyMode\": \"center\",\n        \"orientation\": \"auto\",\n  \
+    \      \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\
+    \n          ],\n          \"fields\": \"\",\n          \"values\": false\n   \
+    \     },\n        \"textMode\": \"auto\"\n      },\n      \"targets\": [\n   \
+    \     {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n\
+    \            \"uid\": \"prometheus\"\n          },\n          \"editorMode\":\
+    \ \"code\",\n          \"expr\": \"ollama_request_queue_depth or vector(0)\",\n\
+    \          \"instant\": true,\n          \"legendFormat\": \"Queue Depth\",\n\
+    \          \"range\": false,\n          \"refId\": \"A\"\n        }\n      ],\n\
+    \      \"title\": \"Ollama Request Queue Depth\",\n      \"type\": \"stat\"\n\
+    \    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n \
+    \       \"uid\": \"prometheus\"\n      },\n      \"description\": \"Inference\
+    \ error and timeout rates over time\",\n      \"fieldConfig\": {\n        \"defaults\"\
+    : {\n          \"color\": {\n            \"mode\": \"palette-classic\"\n     \
+    \     },\n          \"custom\": {\n            \"axisLabel\": \"rate\",\n    \
+    \        \"drawStyle\": \"line\",\n            \"fillOpacity\": 15,\n        \
+    \    \"gradientMode\": \"opacity\",\n            \"lineInterpolation\": \"smooth\"\
+    ,\n            \"lineWidth\": 2,\n            \"showPoints\": \"never\",\n   \
+    \         \"spanNulls\": false\n          },\n          \"mappings\": [],\n  \
+    \        \"unit\": \"reqps\"\n        },\n        \"overrides\": [\n         \
+    \ {\n            \"matcher\": {\n              \"id\": \"byName\",\n         \
+    \     \"options\": \"Errors\"\n            },\n            \"properties\": [\n\
+    \              {\n                \"id\": \"color\",\n                \"value\"\
+    : {\n                  \"fixedColor\": \"red\",\n                  \"mode\": \"\
+    fixed\"\n                }\n              }\n            ]\n          },\n   \
+    \       {\n            \"matcher\": {\n              \"id\": \"byName\",\n   \
+    \           \"options\": \"Timeouts\"\n            },\n            \"properties\"\
+    : [\n              {\n                \"id\": \"color\",\n                \"value\"\
+    : {\n                  \"fixedColor\": \"orange\",\n                  \"mode\"\
+    : \"fixed\"\n                }\n              }\n            ]\n          }\n\
+    \        ]\n      },\n      \"gridPos\": {\n        \"h\": 7,\n        \"w\":\
+    \ 8,\n        \"x\": 16,\n        \"y\": 20\n      },\n      \"id\": 7,\n    \
+    \  \"options\": {\n        \"legend\": {\n          \"calcs\": [\n           \
+    \ \"mean\",\n            \"max\"\n          ],\n          \"displayMode\": \"\
+    table\",\n          \"placement\": \"bottom\",\n          \"showLegend\": true\n\
+    \        },\n        \"tooltip\": {\n          \"mode\": \"multi\",\n        \
+    \  \"sort\": \"desc\"\n        }\n      },\n      \"targets\": [\n        {\n\
+    \          \"datasource\": {\n            \"type\": \"prometheus\",\n        \
+    \    \"uid\": \"prometheus\"\n          },\n          \"editorMode\": \"code\"\
+    ,\n          \"expr\": \"sum(rate(inference_errors_total{model=~\\\"$model\\\"\
+    }[5m])) by (reason)\",\n          \"legendFormat\": \"Errors ({{reason}})\",\n\
+    \          \"range\": true,\n          \"refId\": \"A\"\n        },\n        {\n\
+    \          \"datasource\": {\n            \"type\": \"prometheus\",\n        \
+    \    \"uid\": \"prometheus\"\n          },\n          \"editorMode\": \"code\"\
+    ,\n          \"expr\": \"sum(rate(inference_timeouts_total{model=~\\\"$model\\\
+    \"}[5m]))\",\n          \"legendFormat\": \"Timeouts\",\n          \"range\":\
+    \ true,\n          \"refId\": \"B\"\n        }\n      ],\n      \"title\": \"\
+    Error / Timeout Rate\",\n      \"type\": \"timeseries\"\n    }\n  ],\n  \"refresh\"\
+    : \"10s\",\n  \"schemaVersion\": 38,\n  \"tags\": [\n    \"inference\",\n    \"\
+    ai\",\n    \"ollama\",\n    \"llama3\",\n    \"infervoyage\"\n  ],\n  \"templating\"\
+    : {\n    \"list\": [\n      {\n        \"current\": {\n          \"selected\"\
+    : false,\n          \"text\": \"llama3\",\n          \"value\": \"llama3\"\n \
+    \       },\n        \"datasource\": {\n          \"type\": \"prometheus\",\n \
+    \         \"uid\": \"prometheus\"\n        },\n        \"definition\": \"label_values(inference_ttft_seconds_count,\
+    \ model)\",\n        \"hide\": 0,\n        \"includeAll\": true,\n        \"label\"\
+    : \"Model\",\n        \"multi\": true,\n        \"name\": \"model\",\n       \
+    \ \"options\": [],\n        \"query\": {\n          \"qryType\": 1,\n        \
+    \  \"query\": \"label_values(inference_ttft_seconds_count, model)\",\n       \
+    \   \"refId\": \"StandardVariableQuery\"\n        },\n        \"refresh\": 2,\n\
+    \        \"regex\": \"\",\n        \"skipUrlSync\": false,\n        \"sort\":\
+    \ 1,\n        \"type\": \"query\"\n      }\n    ]\n  },\n  \"time\": {\n    \"\
+    from\": \"now-1h\",\n    \"to\": \"now\"\n  },\n  \"timepicker\": {},\n  \"timezone\"\
+    : \"browser\",\n  \"title\": \"AI Inference Performance\",\n  \"uid\": \"inference-perf\"\
+    ,\n  \"version\": 1,\n  \"weekStart\": \"\"\n}"
+  system-overview.json: "{\n  \"__inputs\": [\n    {\n      \"name\": \"DS_PROMETHEUS\"\
+    ,\n      \"label\": \"Prometheus\",\n      \"description\": \"\",\n      \"type\"\
+    : \"datasource\",\n      \"pluginId\": \"prometheus\",\n      \"pluginName\":\
+    \ \"Prometheus\"\n    }\n  ],\n  \"__requires\": [\n    {\n      \"type\": \"\
+    grafana\",\n      \"id\": \"grafana\",\n      \"name\": \"Grafana\",\n      \"\
+    version\": \"10.0.0\"\n    },\n    {\n      \"type\": \"datasource\",\n      \"\
+    id\": \"prometheus\",\n      \"name\": \"Prometheus\",\n      \"version\": \"\
+    1.0.0\"\n    },\n    {\n      \"type\": \"panel\",\n      \"id\": \"timeseries\"\
+    ,\n      \"name\": \"Time series\",\n      \"version\": \"\"\n    },\n    {\n\
+    \      \"type\": \"panel\",\n      \"id\": \"gauge\",\n      \"name\": \"Gauge\"\
+    ,\n      \"version\": \"\"\n    },\n    {\n      \"type\": \"panel\",\n      \"\
+    id\": \"stat\",\n      \"name\": \"Stat\",\n      \"version\": \"\"\n    },\n\
+    \    {\n      \"type\": \"panel\",\n      \"id\": \"table\",\n      \"name\":\
+    \ \"Table\",\n      \"version\": \"\"\n    }\n  ],\n  \"annotations\": {\n   \
+    \ \"list\": [\n      {\n        \"builtIn\": 1,\n        \"datasource\": {\n \
+    \         \"type\": \"grafana\",\n          \"uid\": \"-- Grafana --\"\n     \
+    \   },\n        \"enable\": true,\n        \"hide\": true,\n        \"iconColor\"\
+    : \"rgba(0, 211, 255, 1)\",\n        \"name\": \"Annotations & Alerts\",\n   \
+    \     \"type\": \"dashboard\"\n      }\n    ]\n  },\n  \"description\": \"Container\
+    \ and host system resources \\u2014 CPU, memory, network I/O per container from\
+    \ cAdvisor and node-exporter\",\n  \"editable\": true,\n  \"fiscalYearStartMonth\"\
+    : 0,\n  \"graphTooltip\": 1,\n  \"id\": null,\n  \"links\": [],\n  \"panels\"\
+    : [\n    {\n      \"collapsed\": false,\n      \"gridPos\": {\n        \"h\":\
+    \ 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 0\n      },\n    \
+    \  \"id\": 100,\n      \"title\": \"Host Resources\",\n      \"type\": \"row\"\
+    \n    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n\
+    \        \"uid\": \"prometheus\"\n      },\n      \"description\": \"Total host\
+    \ CPU utilization from node-exporter\",\n      \"fieldConfig\": {\n        \"\
+    defaults\": {\n          \"color\": {\n            \"mode\": \"palette-classic\"\
+    \n          },\n          \"custom\": {\n            \"axisLabel\": \"CPU %\"\
+    ,\n            \"drawStyle\": \"line\",\n            \"fillOpacity\": 15,\n  \
+    \          \"gradientMode\": \"opacity\",\n            \"lineInterpolation\":\
+    \ \"smooth\",\n            \"lineWidth\": 2,\n            \"showPoints\": \"never\"\
+    ,\n            \"spanNulls\": false\n          },\n          \"mappings\": [],\n\
+    \          \"max\": 100,\n          \"min\": 0,\n          \"thresholds\": {\n\
+    \            \"mode\": \"absolute\",\n            \"steps\": [\n             \
+    \ {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              },\n              {\n                \"color\": \"yellow\",\n \
+    \               \"value\": 70\n              },\n              {\n           \
+    \     \"color\": \"red\",\n                \"value\": 90\n              }\n  \
+    \          ]\n          },\n          \"unit\": \"percent\"\n        },\n    \
+    \    \"overrides\": []\n      },\n      \"gridPos\": {\n        \"h\": 8,\n  \
+    \      \"w\": 12,\n        \"x\": 0,\n        \"y\": 1\n      },\n      \"id\"\
+    : 1,\n      \"options\": {\n        \"legend\": {\n          \"calcs\": [\n  \
+    \          \"mean\",\n            \"max\",\n            \"lastNotNull\"\n    \
+    \      ],\n          \"displayMode\": \"table\",\n          \"placement\": \"\
+    bottom\",\n          \"showLegend\": true\n        },\n        \"tooltip\": {\n\
+    \          \"mode\": \"multi\",\n          \"sort\": \"desc\"\n        }\n   \
+    \   },\n      \"targets\": [\n        {\n          \"datasource\": {\n       \
+    \     \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n       \
+    \   },\n          \"editorMode\": \"code\",\n          \"expr\": \"100 - (avg\
+    \ by (instance) (rate(node_cpu_seconds_total{mode=\\\"idle\\\"}[5m])) * 100)\"\
+    ,\n          \"legendFormat\": \"Host CPU % ({{instance}})\",\n          \"range\"\
+    : true,\n          \"refId\": \"A\"\n        },\n        {\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\
+    \n          },\n          \"editorMode\": \"code\",\n          \"expr\": \"avg\
+    \ by (instance) (rate(node_cpu_seconds_total{mode=\\\"iowait\\\"}[5m])) * 100\"\
+    ,\n          \"legendFormat\": \"I/O Wait % ({{instance}})\",\n          \"range\"\
+    : true,\n          \"refId\": \"B\"\n        }\n      ],\n      \"title\": \"\
+    Host CPU Total\",\n      \"type\": \"timeseries\"\n    },\n    {\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n    \
+    \  },\n      \"description\": \"Host memory available and total from node-exporter\"\
+    ,\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\": {\n\
+    \            \"mode\": \"palette-classic\"\n          },\n          \"custom\"\
+    : {\n            \"axisLabel\": \"bytes\",\n            \"drawStyle\": \"line\"\
+    ,\n            \"fillOpacity\": 15,\n            \"gradientMode\": \"opacity\"\
+    ,\n            \"lineInterpolation\": \"smooth\",\n            \"lineWidth\":\
+    \ 2,\n            \"showPoints\": \"never\",\n            \"spanNulls\": false\n\
+    \          },\n          \"mappings\": [],\n          \"unit\": \"bytes\"\n  \
+    \      },\n        \"overrides\": [\n          {\n            \"matcher\": {\n\
+    \              \"id\": \"byName\",\n              \"options\": \"Available\"\n\
+    \            },\n            \"properties\": [\n              {\n            \
+    \    \"id\": \"color\",\n                \"value\": {\n                  \"fixedColor\"\
+    : \"green\",\n                  \"mode\": \"fixed\"\n                }\n     \
+    \         }\n            ]\n          },\n          {\n            \"matcher\"\
+    : {\n              \"id\": \"byName\",\n              \"options\": \"Total\"\n\
+    \            },\n            \"properties\": [\n              {\n            \
+    \    \"id\": \"color\",\n                \"value\": {\n                  \"fixedColor\"\
+    : \"blue\",\n                  \"mode\": \"fixed\"\n                }\n      \
+    \        },\n              {\n                \"id\": \"custom.lineStyle\",\n\
+    \                \"value\": {\n                  \"dash\": [\n               \
+    \     10,\n                    10\n                  ],\n                  \"\
+    fill\": \"dash\"\n                }\n              }\n            ]\n        \
+    \  },\n          {\n            \"matcher\": {\n              \"id\": \"byName\"\
+    ,\n              \"options\": \"Used\"\n            },\n            \"properties\"\
+    : [\n              {\n                \"id\": \"color\",\n                \"value\"\
+    : {\n                  \"fixedColor\": \"orange\",\n                  \"mode\"\
+    : \"fixed\"\n                }\n              }\n            ]\n          }\n\
+    \        ]\n      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\":\
+    \ 12,\n        \"x\": 12,\n        \"y\": 1\n      },\n      \"id\": 2,\n    \
+    \  \"options\": {\n        \"legend\": {\n          \"calcs\": [\n           \
+    \ \"mean\",\n            \"max\",\n            \"lastNotNull\"\n          ],\n\
+    \          \"displayMode\": \"table\",\n          \"placement\": \"bottom\",\n\
+    \          \"showLegend\": true\n        },\n        \"tooltip\": {\n        \
+    \  \"mode\": \"multi\",\n          \"sort\": \"desc\"\n        }\n      },\n \
+    \     \"targets\": [\n        {\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n       \
+    \   \"editorMode\": \"code\",\n          \"expr\": \"node_memory_MemAvailable_bytes\"\
+    ,\n          \"legendFormat\": \"Available\",\n          \"range\": true,\n  \
+    \        \"refId\": \"A\"\n        },\n        {\n          \"datasource\": {\n\
+    \            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n\
+    \          },\n          \"editorMode\": \"code\",\n          \"expr\": \"node_memory_MemTotal_bytes\
+    \ - node_memory_MemAvailable_bytes\",\n          \"legendFormat\": \"Used\",\n\
+    \          \"range\": true,\n          \"refId\": \"B\"\n        },\n        {\n\
+    \          \"datasource\": {\n            \"type\": \"prometheus\",\n        \
+    \    \"uid\": \"prometheus\"\n          },\n          \"editorMode\": \"code\"\
+    ,\n          \"expr\": \"node_memory_MemTotal_bytes\",\n          \"legendFormat\"\
+    : \"Total\",\n          \"range\": true,\n          \"refId\": \"C\"\n       \
+    \ }\n      ],\n      \"title\": \"Host Memory Available\",\n      \"type\": \"\
+    timeseries\"\n    },\n    {\n      \"collapsed\": false,\n      \"gridPos\": {\n\
+    \        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 9\n\
+    \      },\n      \"id\": 101,\n      \"title\": \"Container CPU\",\n      \"type\"\
+    : \"row\"\n    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\"\
+    ,\n        \"uid\": \"prometheus\"\n      },\n      \"description\": \"CPU usage\
+    \ per container from cAdvisor \\u2014 rate of cpu_usage_seconds_total\",\n   \
+    \   \"fieldConfig\": {\n        \"defaults\": {\n          \"color\": {\n    \
+    \        \"mode\": \"palette-classic\"\n          },\n          \"custom\": {\n\
+    \            \"axisLabel\": \"CPU cores\",\n            \"drawStyle\": \"line\"\
+    ,\n            \"fillOpacity\": 10,\n            \"gradientMode\": \"none\",\n\
+    \            \"lineInterpolation\": \"smooth\",\n            \"lineWidth\": 1,\n\
+    \            \"showPoints\": \"never\",\n            \"spanNulls\": false\n  \
+    \        },\n          \"mappings\": [],\n          \"unit\": \"short\"\n    \
+    \    },\n        \"overrides\": []\n      },\n      \"gridPos\": {\n        \"\
+    h\": 9,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 10\n      },\n\
+    \      \"id\": 3,\n      \"options\": {\n        \"legend\": {\n          \"calcs\"\
+    : [\n            \"mean\",\n            \"max\",\n            \"lastNotNull\"\n\
+    \          ],\n          \"displayMode\": \"table\",\n          \"placement\"\
+    : \"right\",\n          \"showLegend\": true\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\",\n          \"sort\": \"desc\"\n        }\n\
+    \      },\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n    \
+    \      },\n          \"editorMode\": \"code\",\n          \"expr\": \"sum(rate(container_cpu_usage_seconds_total{name=~\\\
+    \"$container\\\", name!=\\\"\\\", image!=\\\"\\\"}[5m])) by (name)\",\n      \
+    \    \"legendFormat\": \"{{name}}\",\n          \"range\": true,\n          \"\
+    refId\": \"A\"\n        }\n      ],\n      \"title\": \"CPU Usage per Container\"\
+    ,\n      \"type\": \"timeseries\"\n    },\n    {\n      \"collapsed\": false,\n\
+    \      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n\
+    \        \"y\": 19\n      },\n      \"id\": 102,\n      \"title\": \"Container\
+    \ Memory\",\n      \"type\": \"row\"\n    },\n    {\n      \"datasource\": {\n\
+    \        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n\
+    \      \"description\": \"Memory usage per container from cAdvisor\",\n      \"\
+    fieldConfig\": {\n        \"defaults\": {\n          \"color\": {\n          \
+    \  \"mode\": \"palette-classic\"\n          },\n          \"custom\": {\n    \
+    \        \"axisLabel\": \"bytes\",\n            \"drawStyle\": \"line\",\n   \
+    \         \"fillOpacity\": 10,\n            \"gradientMode\": \"none\",\n    \
+    \        \"lineInterpolation\": \"smooth\",\n            \"lineWidth\": 1,\n \
+    \           \"showPoints\": \"never\",\n            \"spanNulls\": false\n   \
+    \       },\n          \"mappings\": [],\n          \"unit\": \"bytes\"\n     \
+    \   },\n        \"overrides\": []\n      },\n      \"gridPos\": {\n        \"\
+    h\": 9,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 20\n      },\n\
+    \      \"id\": 4,\n      \"options\": {\n        \"legend\": {\n          \"calcs\"\
+    : [\n            \"mean\",\n            \"max\",\n            \"lastNotNull\"\n\
+    \          ],\n          \"displayMode\": \"table\",\n          \"placement\"\
+    : \"right\",\n          \"showLegend\": true\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\",\n          \"sort\": \"desc\"\n        }\n\
+    \      },\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n    \
+    \      },\n          \"editorMode\": \"code\",\n          \"expr\": \"container_memory_usage_bytes{name=~\\\
+    \"$container\\\", name!=\\\"\\\", image!=\\\"\\\"}\",\n          \"legendFormat\"\
+    : \"{{name}}\",\n          \"range\": true,\n          \"refId\": \"A\"\n    \
+    \    }\n      ],\n      \"title\": \"Memory Usage per Container\",\n      \"type\"\
+    : \"timeseries\"\n    },\n    {\n      \"collapsed\": false,\n      \"gridPos\"\
+    : {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\":\
+    \ 29\n      },\n      \"id\": 103,\n      \"title\": \"Network I/O\",\n      \"\
+    type\": \"row\"\n    },\n    {\n      \"datasource\": {\n        \"type\": \"\
+    prometheus\",\n        \"uid\": \"prometheus\"\n      },\n      \"description\"\
+    : \"Network receive and transmit bytes per second per container\",\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": {\n            \"mode\": \"\
+    palette-classic\"\n          },\n          \"custom\": {\n            \"axisLabel\"\
+    : \"bytes/s\",\n            \"drawStyle\": \"line\",\n            \"fillOpacity\"\
+    : 8,\n            \"gradientMode\": \"none\",\n            \"lineInterpolation\"\
+    : \"smooth\",\n            \"lineWidth\": 1,\n            \"showPoints\": \"never\"\
+    ,\n            \"spanNulls\": false\n          },\n          \"mappings\": [],\n\
+    \          \"unit\": \"Bps\"\n        },\n        \"overrides\": []\n      },\n\
+    \      \"gridPos\": {\n        \"h\": 9,\n        \"w\": 24,\n        \"x\": 0,\n\
+    \        \"y\": 30\n      },\n      \"id\": 5,\n      \"options\": {\n       \
+    \ \"legend\": {\n          \"calcs\": [\n            \"mean\",\n            \"\
+    max\",\n            \"lastNotNull\"\n          ],\n          \"displayMode\":\
+    \ \"table\",\n          \"placement\": \"right\",\n          \"showLegend\": true\n\
+    \        },\n        \"tooltip\": {\n          \"mode\": \"multi\",\n        \
+    \  \"sort\": \"desc\"\n        }\n      },\n      \"targets\": [\n        {\n\
+    \          \"datasource\": {\n            \"type\": \"prometheus\",\n        \
+    \    \"uid\": \"prometheus\"\n          },\n          \"editorMode\": \"code\"\
+    ,\n          \"expr\": \"sum(rate(container_network_receive_bytes_total{name=~\\\
+    \"$container\\\", name!=\\\"\\\"}[5m])) by (name)\",\n          \"legendFormat\"\
+    : \"RX {{name}}\",\n          \"range\": true,\n          \"refId\": \"A\"\n \
+    \       },\n        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"prometheus\"\n          },\n          \"editorMode\"\
+    : \"code\",\n          \"expr\": \"-sum(rate(container_network_transmit_bytes_total{name=~\\\
+    \"$container\\\", name!=\\\"\\\"}[5m])) by (name)\",\n          \"legendFormat\"\
+    : \"TX {{name}} (neg)\",\n          \"range\": true,\n          \"refId\": \"\
+    B\"\n        }\n      ],\n      \"title\": \"Network I/O per Container (RX / TX)\"\
+    ,\n      \"type\": \"timeseries\"\n    }\n  ],\n  \"refresh\": \"10s\",\n  \"\
+    schemaVersion\": 38,\n  \"tags\": [\n    \"system\",\n    \"containers\",\n  \
+    \  \"cadvisor\",\n    \"node-exporter\",\n    \"infervoyage\"\n  ],\n  \"templating\"\
+    : {\n    \"list\": [\n      {\n        \"current\": {\n          \"selected\"\
+    : false,\n          \"text\": \"All\",\n          \"value\": \"$__all\"\n    \
+    \    },\n        \"datasource\": {\n          \"type\": \"prometheus\",\n    \
+    \      \"uid\": \"prometheus\"\n        },\n        \"definition\": \"label_values(container_cpu_usage_seconds_total{image!=\\\
+    \"\\\"}, name)\",\n        \"hide\": 0,\n        \"includeAll\": true,\n     \
+    \   \"label\": \"Container\",\n        \"multi\": true,\n        \"name\": \"\
+    container\",\n        \"options\": [],\n        \"query\": {\n          \"qryType\"\
+    : 1,\n          \"query\": \"label_values(container_cpu_usage_seconds_total{image!=\\\
+    \"\\\"}, name)\",\n          \"refId\": \"StandardVariableQuery\"\n        },\n\
+    \        \"refresh\": 2,\n        \"regex\": \"\",\n        \"skipUrlSync\": false,\n\
+    \        \"sort\": 1,\n        \"type\": \"query\"\n      }\n    ]\n  },\n  \"\
+    time\": {\n    \"from\": \"now-1h\",\n    \"to\": \"now\"\n  },\n  \"timepicker\"\
+    : {},\n  \"timezone\": \"browser\",\n  \"title\": \"System Overview\",\n  \"uid\"\
+    : \"system-overview\",\n  \"version\": 1,\n  \"weekStart\": \"\"\n}"
+  user-analytics.json: "{\n  \"annotations\": {\n    \"list\": [\n      {\n      \
+    \  \"builtIn\": 1,\n        \"datasource\": {\n          \"type\": \"grafana\"\
+    ,\n          \"uid\": \"-- Grafana --\"\n        },\n        \"enable\": true,\n\
+    \        \"hide\": true,\n        \"iconColor\": \"rgba(0, 211, 255, 1)\",\n \
+    \       \"name\": \"Annotations & Alerts\",\n        \"type\": \"dashboard\"\n\
+    \      }\n    ]\n  },\n  \"description\": \"User analytics - user registrations,\
+    \ logins, daily active users, email delivery, and tenant usage statistics.\",\n\
+    \  \"editable\": true,\n  \"fiscalYearStartMonth\": 0,\n  \"graphTooltip\": 1,\n\
+    \  \"id\": null,\n  \"links\": [],\n  \"panels\": [\n    {\n      \"collapsed\"\
+    : false,\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n      \
+    \  \"x\": 0,\n        \"y\": 0\n      },\n      \"id\": 10,\n      \"title\":\
+    \ \"User Engagement Summary\",\n      \"type\": \"row\"\n    },\n    {\n     \
+    \ \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\
+    \n      },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\"\
+    : {\n            \"mode\": \"palette-classic\"\n          },\n          \"mappings\"\
+    : [],\n          \"unit\": \"short\"\n        }\n      },\n      \"gridPos\":\
+    \ {\n        \"h\": 4,\n        \"w\": 8,\n        \"x\": 0,\n        \"y\": 1\n\
+    \      },\n      \"id\": 1,\n      \"options\": {\n        \"colorMode\": \"value\"\
+    ,\n        \"graphMode\": \"area\",\n        \"justifyMode\": \"center\",\n  \
+    \      \"percentChangeColorMode\": \"value\",\n        \"reduceOptions\": {\n\
+    \          \"calcs\": [\n            \"lastNotNull\"\n          ],\n         \
+    \ \"fields\": \"\",\n          \"values\": false\n        },\n        \"textMode\"\
+    : \"value\"\n      },\n      \"targets\": [\n        {\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\
+    \n          },\n          \"editorMode\": \"code\",\n          \"expr\": \"total_registered_users\"\
+    ,\n          \"instant\": true,\n          \"range\": false,\n          \"refId\"\
+    : \"A\"\n        }\n      ],\n      \"title\": \"Total Registered Users\",\n \
+    \     \"type\": \"stat\"\n    },\n    {\n      \"datasource\": {\n        \"type\"\
+    : \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": {\n            \"mode\": \"\
+    palette-classic\"\n          },\n          \"mappings\": [],\n          \"unit\"\
+    : \"short\"\n        }\n      },\n      \"gridPos\": {\n        \"h\": 4,\n  \
+    \      \"w\": 8,\n        \"x\": 8,\n        \"y\": 1\n      },\n      \"id\"\
+    : 2,\n      \"options\": {\n        \"colorMode\": \"value\",\n        \"graphMode\"\
+    : \"area\",\n        \"justifyMode\": \"center\",\n        \"percentChangeColorMode\"\
+    : \"value\",\n        \"reduceOptions\": {\n          \"calcs\": [\n         \
+    \   \"lastNotNull\"\n          ],\n          \"fields\": \"\",\n          \"values\"\
+    : false\n        },\n        \"textMode\": \"value\"\n      },\n      \"targets\"\
+    : [\n        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"prometheus\"\n          },\n          \"editorMode\"\
+    : \"code\",\n          \"expr\": \"daily_active_users\",\n          \"instant\"\
+    : true,\n          \"range\": false,\n          \"refId\": \"A\"\n        }\n\
+    \      ],\n      \"title\": \"Daily Active Users (DAU)\",\n      \"type\": \"\
+    stat\"\n    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\"\
+    ,\n        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\": {\n     \
+    \   \"defaults\": {\n          \"color\": {\n            \"mode\": \"palette-classic\"\
+    \n          },\n          \"mappings\": [],\n          \"unit\": \"short\"\n \
+    \       }\n      },\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 8,\n\
+    \        \"x\": 16,\n        \"y\": 1\n      },\n      \"id\": 3,\n      \"options\"\
+    : {\n        \"colorMode\": \"value\",\n        \"graphMode\": \"area\",\n   \
+    \     \"justifyMode\": \"center\",\n        \"percentChangeColorMode\": \"value\"\
+    ,\n        \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\
+    \n          ],\n          \"fields\": \"\",\n          \"values\": false\n   \
+    \     },\n        \"textMode\": \"value\"\n      },\n      \"targets\": [\n  \
+    \      {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n\
+    \            \"uid\": \"prometheus\"\n          },\n          \"editorMode\":\
+    \ \"code\",\n          \"expr\": \"active_users_last_15m\",\n          \"instant\"\
+    : true,\n          \"range\": false,\n          \"refId\": \"A\"\n        }\n\
+    \      ],\n      \"title\": \"Currently Active Users\",\n      \"type\": \"stat\"\
+    \n    },\n    {\n      \"collapsed\": false,\n      \"gridPos\": {\n        \"\
+    h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 5\n      },\n \
+    \     \"id\": 11,\n      \"title\": \"Access & Authentication Trends\",\n    \
+    \  \"type\": \"row\"\n    },\n    {\n      \"datasource\": {\n        \"type\"\
+    : \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": {\n            \"mode\": \"\
+    palette-classic\"\n          },\n          \"custom\": {\n            \"axisLabel\"\
+    : \"Logins/min\",\n            \"drawStyle\": \"line\",\n            \"fillOpacity\"\
+    : 10,\n            \"gradientMode\": \"opacity\",\n            \"lineInterpolation\"\
+    : \"smooth\",\n            \"lineWidth\": 2,\n            \"spanNulls\": false\n\
+    \          },\n          \"unit\": \"reqps\"\n        }\n      },\n      \"gridPos\"\
+    : {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\": 0,\n        \"y\":\
+    \ 6\n      },\n      \"id\": 4,\n      \"targets\": [\n        {\n          \"\
+    datasource\": {\n            \"type\": \"prometheus\",\n            \"uid\": \"\
+    prometheus\"\n          },\n          \"editorMode\": \"code\",\n          \"\
+    expr\": \"sum(rate(user_logins_total[5m])) by (status)\",\n          \"legendFormat\"\
+    : \"Login {{status}}\",\n          \"refId\": \"A\"\n        }\n      ],\n   \
+    \   \"title\": \"Login Frequency (Logins per second)\",\n      \"type\": \"timeseries\"\
+    \n    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n\
+    \        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\": {\n       \
+    \ \"defaults\": {\n          \"color\": {\n            \"mode\": \"palette-classic\"\
+    \n          },\n          \"custom\": {\n            \"axisLabel\": \"Emails/min\"\
+    ,\n            \"drawStyle\": \"line\",\n            \"fillOpacity\": 10,\n  \
+    \          \"gradientMode\": \"opacity\",\n            \"lineInterpolation\":\
+    \ \"smooth\",\n            \"lineWidth\": 2,\n            \"spanNulls\": false\n\
+    \          },\n          \"unit\": \"reqps\"\n        }\n      },\n      \"gridPos\"\
+    : {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\": 12,\n        \"y\"\
+    : 6\n      },\n      \"id\": 5,\n      \"targets\": [\n        {\n          \"\
+    datasource\": {\n            \"type\": \"prometheus\",\n            \"uid\": \"\
+    prometheus\"\n          },\n          \"editorMode\": \"code\",\n          \"\
+    expr\": \"sum(rate(emails_sent_total[5m])) by (purpose, status)\",\n         \
+    \ \"legendFormat\": \"{{purpose}} - {{status}}\",\n          \"refId\": \"A\"\n\
+    \        }\n      ],\n      \"title\": \"Notification / Email Delivery Stats\"\
+    ,\n      \"type\": \"timeseries\"\n    },\n    {\n      \"collapsed\": false,\n\
+    \      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n\
+    \        \"y\": 14\n      },\n      \"id\": 12,\n      \"title\": \"Tenant & Multi-Organization\
+    \ Consumption\",\n      \"type\": \"row\"\n    },\n    {\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n    \
+    \  },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\"\
+    : {\n            \"mode\": \"palette-classic\"\n          },\n          \"custom\"\
+    : {\n            \"hideFrom\": {\n              \"legend\": false,\n         \
+    \     \"tooltip\": false,\n              \"viz\": false\n            }\n     \
+    \     },\n          \"unit\": \"short\"\n        }\n      },\n      \"gridPos\"\
+    : {\n        \"h\": 8,\n        \"w\": 8,\n        \"x\": 0,\n        \"y\": 15\n\
+    \      },\n      \"id\": 6,\n      \"options\": {\n        \"displayLabels\":\
+    \ [\n          \"name\",\n          \"percent\"\n        ],\n        \"legend\"\
+    : {\n          \"displayMode\": \"table\",\n          \"placement\": \"bottom\"\
+    ,\n          \"showLegend\": true,\n          \"values\": [\n            \"value\"\
+    ,\n            \"percent\"\n          ]\n        },\n        \"pieType\": \"donut\"\
+    ,\n        \"tooltip\": {\n          \"mode\": \"multi\",\n          \"sort\"\
+    : \"desc\"\n        }\n      },\n      \"targets\": [\n        {\n          \"\
+    datasource\": {\n            \"type\": \"prometheus\",\n            \"uid\": \"\
+    prometheus\"\n          },\n          \"editorMode\": \"code\",\n          \"\
+    expr\": \"tenant_chat_count\",\n          \"instant\": true,\n          \"legendFormat\"\
+    : \"Tenant ID {{org_id}}\",\n          \"range\": false,\n          \"refId\"\
+    : \"A\"\n        }\n      ],\n      \"title\": \"Feature Adoption: Chats Created\
+    \ per Tenant\",\n      \"type\": \"piechart\"\n    },\n    {\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n    \
+    \  },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\"\
+    : {\n            \"mode\": \"palette-classic\"\n          },\n          \"custom\"\
+    : {\n            \"hideFrom\": {\n              \"legend\": false,\n         \
+    \     \"tooltip\": false,\n              \"viz\": false\n            }\n     \
+    \     },\n          \"unit\": \"short\"\n        }\n      },\n      \"gridPos\"\
+    : {\n        \"h\": 8,\n        \"w\": 8,\n        \"x\": 8,\n        \"y\": 15\n\
+    \      },\n      \"id\": 7,\n      \"options\": {\n        \"displayLabels\":\
+    \ [\n          \"name\",\n          \"percent\"\n        ],\n        \"legend\"\
+    : {\n          \"displayMode\": \"table\",\n          \"placement\": \"bottom\"\
+    ,\n          \"showLegend\": true,\n          \"values\": [\n            \"value\"\
+    ,\n            \"percent\"\n          ]\n        },\n        \"pieType\": \"donut\"\
+    ,\n        \"tooltip\": {\n          \"mode\": \"multi\",\n          \"sort\"\
+    : \"desc\"\n        }\n      },\n      \"targets\": [\n        {\n          \"\
+    datasource\": {\n            \"type\": \"prometheus\",\n            \"uid\": \"\
+    prometheus\"\n          },\n          \"editorMode\": \"code\",\n          \"\
+    expr\": \"tenant_inference_count\",\n          \"instant\": true,\n          \"\
+    legendFormat\": \"Tenant ID {{org_id}}\",\n          \"range\": false,\n     \
+    \     \"refId\": \"A\"\n        }\n      ],\n      \"title\": \"API Consumption:\
+    \ Requests per Tenant\",\n      \"type\": \"piechart\"\n    },\n    {\n      \"\
+    datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\
+    \n      },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\"\
+    : {\n            \"mode\": \"palette-classic\"\n          },\n          \"custom\"\
+    : {\n            \"hideFrom\": {\n              \"legend\": false,\n         \
+    \     \"tooltip\": false,\n              \"viz\": false\n            }\n     \
+    \     },\n          \"unit\": \"short\"\n        }\n      },\n      \"gridPos\"\
+    : {\n        \"h\": 8,\n        \"w\": 8,\n        \"x\": 16,\n        \"y\":\
+    \ 15\n      },\n      \"id\": 8,\n      \"options\": {\n        \"displayLabels\"\
+    : [\n          \"name\",\n          \"percent\"\n        ],\n        \"legend\"\
+    : {\n          \"displayMode\": \"table\",\n          \"placement\": \"bottom\"\
+    ,\n          \"showLegend\": true,\n          \"values\": [\n            \"value\"\
+    ,\n            \"percent\"\n          ]\n        },\n        \"pieType\": \"donut\"\
+    ,\n        \"tooltip\": {\n          \"mode\": \"multi\",\n          \"sort\"\
+    : \"desc\"\n        }\n      },\n      \"targets\": [\n        {\n          \"\
+    datasource\": {\n            \"type\": \"prometheus\",\n            \"uid\": \"\
+    prometheus\"\n          },\n          \"editorMode\": \"code\",\n          \"\
+    expr\": \"tenant_token_count\",\n          \"instant\": true,\n          \"legendFormat\"\
+    : \"Tenant ID {{org_id}}\",\n          \"range\": false,\n          \"refId\"\
+    : \"A\"\n        }\n      ],\n      \"title\": \"Token Consumption: Total Tokens\
+    \ per Tenant\",\n      \"type\": \"piechart\"\n    }\n  ],\n  \"refresh\": \"\
+    10s\",\n  \"schemaVersion\": 38,\n  \"tags\": [\n    \"users\",\n    \"analytics\"\
+    ,\n    \"tenants\",\n    \"infervoyage\"\n  ],\n  \"time\": {\n    \"from\": \"\
+    now-1h\",\n    \"to\": \"now\"\n  },\n  \"timezone\": \"browser\",\n  \"title\"\
+    : \"User & Tenant Analytics\",\n  \"uid\": \"user-analytics\",\n  \"version\"\
+    : 1\n}"
+  redis-metrics.json: "{\n  \"__inputs\": [\n    {\n      \"name\": \"DS_PROMETHEUS\"\
+    ,\n      \"label\": \"Prometheus\",\n      \"description\": \"\",\n      \"type\"\
+    : \"datasource\",\n      \"pluginId\": \"prometheus\",\n      \"pluginName\":\
+    \ \"Prometheus\"\n    }\n  ],\n  \"__requires\": [\n    {\n      \"type\": \"\
+    grafana\",\n      \"id\": \"grafana\",\n      \"name\": \"Grafana\",\n      \"\
+    version\": \"10.0.0\"\n    },\n    {\n      \"type\": \"datasource\",\n      \"\
+    id\": \"prometheus\",\n      \"name\": \"Prometheus\",\n      \"version\": \"\
+    1.0.0\"\n    },\n    {\n      \"type\": \"panel\",\n      \"id\": \"timeseries\"\
+    ,\n      \"name\": \"Time series\",\n      \"version\": \"\"\n    },\n    {\n\
+    \      \"type\": \"panel\",\n      \"id\": \"gauge\",\n      \"name\": \"Gauge\"\
+    ,\n      \"version\": \"\"\n    },\n    {\n      \"type\": \"panel\",\n      \"\
+    id\": \"stat\",\n      \"name\": \"Stat\",\n      \"version\": \"\"\n    },\n\
+    \    {\n      \"type\": \"panel\",\n      \"id\": \"bargauge\",\n      \"name\"\
+    : \"Bar gauge\",\n      \"version\": \"\"\n    }\n  ],\n  \"annotations\": {\n\
+    \    \"list\": [\n      {\n        \"builtIn\": 1,\n        \"datasource\": {\n\
+    \          \"type\": \"grafana\",\n          \"uid\": \"-- Grafana --\"\n    \
+    \    },\n        \"enable\": true,\n        \"hide\": true,\n        \"iconColor\"\
+    : \"rgba(0, 211, 255, 1)\",\n        \"name\": \"Annotations & Alerts\",\n   \
+    \     \"type\": \"dashboard\"\n      }\n    ]\n  },\n  \"description\": \"Redis\
+    \ health \\u2014 memory usage, OPS, keyspace hit ratio, clients, rate-limit keys,\
+    \ and evictions\",\n  \"editable\": true,\n  \"fiscalYearStartMonth\": 0,\n  \"\
+    graphTooltip\": 1,\n  \"id\": null,\n  \"links\": [],\n  \"panels\": [\n    {\n\
+    \      \"collapsed\": false,\n      \"gridPos\": {\n        \"h\": 1,\n      \
+    \  \"w\": 24,\n        \"x\": 0,\n        \"y\": 0\n      },\n      \"id\": 100,\n\
+    \      \"title\": \"Memory\",\n      \"type\": \"row\"\n    },\n    {\n      \"\
+    datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\
+    \n      },\n      \"description\": \"Memory used vs configured max memory over\
+    \ time\",\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\"\
+    : {\n            \"mode\": \"palette-classic\"\n          },\n          \"custom\"\
+    : {\n            \"axisLabel\": \"bytes\",\n            \"drawStyle\": \"line\"\
+    ,\n            \"fillOpacity\": 15,\n            \"gradientMode\": \"opacity\"\
+    ,\n            \"lineInterpolation\": \"smooth\",\n            \"lineWidth\":\
+    \ 2,\n            \"showPoints\": \"never\",\n            \"spanNulls\": false\n\
+    \          },\n          \"mappings\": [],\n          \"unit\": \"bytes\"\n  \
+    \      },\n        \"overrides\": [\n          {\n            \"matcher\": {\n\
+    \              \"id\": \"byName\",\n              \"options\": \"Used Memory\"\
+    \n            },\n            \"properties\": [\n              {\n           \
+    \     \"id\": \"color\",\n                \"value\": {\n                  \"fixedColor\"\
+    : \"blue\",\n                  \"mode\": \"fixed\"\n                }\n      \
+    \        }\n            ]\n          },\n          {\n            \"matcher\"\
+    : {\n              \"id\": \"byName\",\n              \"options\": \"Max Memory\"\
+    \n            },\n            \"properties\": [\n              {\n           \
+    \     \"id\": \"color\",\n                \"value\": {\n                  \"fixedColor\"\
+    : \"red\",\n                  \"mode\": \"fixed\"\n                }\n       \
+    \       },\n              {\n                \"id\": \"custom.lineStyle\",\n \
+    \               \"value\": {\n                  \"dash\": [\n                \
+    \    10,\n                    10\n                  ],\n                  \"fill\"\
+    : \"dash\"\n                }\n              }\n            ]\n          },\n\
+    \          {\n            \"matcher\": {\n              \"id\": \"byName\",\n\
+    \              \"options\": \"RSS Memory\"\n            },\n            \"properties\"\
+    : [\n              {\n                \"id\": \"color\",\n                \"value\"\
+    : {\n                  \"fixedColor\": \"orange\",\n                  \"mode\"\
+    : \"fixed\"\n                }\n              }\n            ]\n          }\n\
+    \        ]\n      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\":\
+    \ 16,\n        \"x\": 0,\n        \"y\": 1\n      },\n      \"id\": 1,\n     \
+    \ \"options\": {\n        \"legend\": {\n          \"calcs\": [\n            \"\
+    mean\",\n            \"max\",\n            \"lastNotNull\"\n          ],\n   \
+    \       \"displayMode\": \"table\",\n          \"placement\": \"bottom\",\n  \
+    \        \"showLegend\": true\n        },\n        \"tooltip\": {\n          \"\
+    mode\": \"multi\",\n          \"sort\": \"desc\"\n        }\n      },\n      \"\
+    targets\": [\n        {\n          \"datasource\": {\n            \"type\": \"\
+    prometheus\",\n            \"uid\": \"prometheus\"\n          },\n          \"\
+    editorMode\": \"code\",\n          \"expr\": \"redis_memory_used_bytes\",\n  \
+    \        \"legendFormat\": \"Used Memory\",\n          \"range\": true,\n    \
+    \      \"refId\": \"A\"\n        },\n        {\n          \"datasource\": {\n\
+    \            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n\
+    \          },\n          \"editorMode\": \"code\",\n          \"expr\": \"redis_config_maxmemory\"\
+    ,\n          \"legendFormat\": \"Max Memory\",\n          \"range\": true,\n \
+    \         \"refId\": \"B\"\n        },\n        {\n          \"datasource\": {\n\
+    \            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n\
+    \          },\n          \"editorMode\": \"code\",\n          \"expr\": \"redis_memory_used_rss_bytes\"\
+    ,\n          \"legendFormat\": \"RSS Memory\",\n          \"range\": true,\n \
+    \         \"refId\": \"C\"\n        }\n      ],\n      \"title\": \"Memory Used\
+    \ vs Max\",\n      \"type\": \"timeseries\"\n    },\n    {\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n    \
+    \  },\n      \"description\": \"Percentage of maxmemory currently in use\",\n\
+    \      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\": {\n \
+    \           \"mode\": \"thresholds\"\n          },\n          \"mappings\": [],\n\
+    \          \"max\": 100,\n          \"min\": 0,\n          \"thresholds\": {\n\
+    \            \"mode\": \"absolute\",\n            \"steps\": [\n             \
+    \ {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              },\n              {\n                \"color\": \"yellow\",\n \
+    \               \"value\": 70\n              },\n              {\n           \
+    \     \"color\": \"red\",\n                \"value\": 90\n              }\n  \
+    \          ]\n          },\n          \"unit\": \"percent\"\n        },\n    \
+    \    \"overrides\": []\n      },\n      \"gridPos\": {\n        \"h\": 8,\n  \
+    \      \"w\": 8,\n        \"x\": 16,\n        \"y\": 1\n      },\n      \"id\"\
+    : 2,\n      \"options\": {\n        \"minVizHeight\": 75,\n        \"minVizWidth\"\
+    : 75,\n        \"orientation\": \"auto\",\n        \"reduceOptions\": {\n    \
+    \      \"calcs\": [\n            \"lastNotNull\"\n          ],\n          \"fields\"\
+    : \"\",\n          \"values\": false\n        },\n        \"showThresholdLabels\"\
+    : true,\n        \"showThresholdMarkers\": true\n      },\n      \"targets\":\
+    \ [\n        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"prometheus\"\n          },\n          \"editorMode\"\
+    : \"code\",\n          \"expr\": \"100 * redis_memory_used_bytes / redis_config_maxmemory\"\
+    ,\n          \"instant\": true,\n          \"legendFormat\": \"Memory %\",\n \
+    \         \"range\": false,\n          \"refId\": \"A\"\n        }\n      ],\n\
+    \      \"title\": \"Memory Usage %\",\n      \"type\": \"gauge\"\n    },\n   \
+    \ {\n      \"collapsed\": false,\n      \"gridPos\": {\n        \"h\": 1,\n  \
+    \      \"w\": 24,\n        \"x\": 0,\n        \"y\": 9\n      },\n      \"id\"\
+    : 101,\n      \"title\": \"Operations & Cache\",\n      \"type\": \"row\"\n  \
+    \  },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n   \
+    \     \"uid\": \"prometheus\"\n      },\n      \"description\": \"Redis commands\
+    \ processed per second\",\n      \"fieldConfig\": {\n        \"defaults\": {\n\
+    \          \"color\": {\n            \"mode\": \"palette-classic\"\n         \
+    \ },\n          \"custom\": {\n            \"axisLabel\": \"ops/s\",\n       \
+    \     \"drawStyle\": \"line\",\n            \"fillOpacity\": 12,\n           \
+    \ \"gradientMode\": \"opacity\",\n            \"lineInterpolation\": \"smooth\"\
+    ,\n            \"lineWidth\": 2,\n            \"showPoints\": \"never\",\n   \
+    \         \"spanNulls\": false\n          },\n          \"mappings\": [],\n  \
+    \        \"unit\": \"reqps\"\n        },\n        \"overrides\": []\n      },\n\
+    \      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\": 0,\n\
+    \        \"y\": 10\n      },\n      \"id\": 3,\n      \"options\": {\n       \
+    \ \"legend\": {\n          \"calcs\": [\n            \"mean\",\n            \"\
+    max\",\n            \"lastNotNull\"\n          ],\n          \"displayMode\":\
+    \ \"table\",\n          \"placement\": \"bottom\",\n          \"showLegend\":\
+    \ true\n        },\n        \"tooltip\": {\n          \"mode\": \"multi\",\n \
+    \         \"sort\": \"desc\"\n        }\n      },\n      \"targets\": [\n    \
+    \    {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n \
+    \           \"uid\": \"prometheus\"\n          },\n          \"editorMode\": \"\
+    code\",\n          \"expr\": \"rate(redis_commands_processed_total[5m])\",\n \
+    \         \"legendFormat\": \"Commands/s\",\n          \"range\": true,\n    \
+    \      \"refId\": \"A\"\n        },\n        {\n          \"datasource\": {\n\
+    \            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n\
+    \          },\n          \"editorMode\": \"code\",\n          \"expr\": \"sum(rate(redis_commands_total[5m]))\
+    \ by (cmd)\",\n          \"legendFormat\": \"{{cmd}}\",\n          \"range\":\
+    \ true,\n          \"refId\": \"B\"\n        }\n      ],\n      \"title\": \"\
+    OPS per Second\",\n      \"type\": \"timeseries\"\n    },\n    {\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n    \
+    \  },\n      \"description\": \"Keyspace hit ratio \\u2014 higher is better; low\
+    \ ratio indicates cache miss pressure\",\n      \"fieldConfig\": {\n        \"\
+    defaults\": {\n          \"color\": {\n            \"mode\": \"palette-classic\"\
+    \n          },\n          \"custom\": {\n            \"axisLabel\": \"ratio %\"\
+    ,\n            \"drawStyle\": \"line\",\n            \"fillOpacity\": 15,\n  \
+    \          \"gradientMode\": \"opacity\",\n            \"lineInterpolation\":\
+    \ \"smooth\",\n            \"lineWidth\": 2,\n            \"showPoints\": \"never\"\
+    ,\n            \"spanNulls\": false\n          },\n          \"mappings\": [],\n\
+    \          \"max\": 100,\n          \"min\": 0,\n          \"thresholds\": {\n\
+    \            \"mode\": \"absolute\",\n            \"steps\": [\n             \
+    \ {\n                \"color\": \"red\",\n                \"value\": null\n  \
+    \            },\n              {\n                \"color\": \"yellow\",\n   \
+    \             \"value\": 80\n              },\n              {\n             \
+    \   \"color\": \"green\",\n                \"value\": 95\n              }\n  \
+    \          ]\n          },\n          \"unit\": \"percent\"\n        },\n    \
+    \    \"overrides\": [\n          {\n            \"matcher\": {\n             \
+    \ \"id\": \"byName\",\n              \"options\": \"Hit Ratio %\"\n          \
+    \  },\n            \"properties\": [\n              {\n                \"id\"\
+    : \"color\",\n                \"value\": {\n                  \"fixedColor\":\
+    \ \"green\",\n                  \"mode\": \"fixed\"\n                }\n     \
+    \         }\n            ]\n          },\n          {\n            \"matcher\"\
+    : {\n              \"id\": \"byName\",\n              \"options\": \"Miss Ratio\
+    \ %\"\n            },\n            \"properties\": [\n              {\n      \
+    \          \"id\": \"color\",\n                \"value\": {\n                \
+    \  \"fixedColor\": \"red\",\n                  \"mode\": \"fixed\"\n         \
+    \       }\n              }\n            ]\n          }\n        ]\n      },\n\
+    \      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\": 12,\n\
+    \        \"y\": 10\n      },\n      \"id\": 4,\n      \"options\": {\n       \
+    \ \"legend\": {\n          \"calcs\": [\n            \"mean\",\n            \"\
+    lastNotNull\"\n          ],\n          \"displayMode\": \"table\",\n         \
+    \ \"placement\": \"bottom\",\n          \"showLegend\": true\n        },\n   \
+    \     \"tooltip\": {\n          \"mode\": \"multi\",\n          \"sort\": \"desc\"\
+    \n        }\n      },\n      \"targets\": [\n        {\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\
+    \n          },\n          \"editorMode\": \"code\",\n          \"expr\": \"100\
+    \ * rate(redis_keyspace_hits_total[5m]) / (rate(redis_keyspace_hits_total[5m])\
+    \ + rate(redis_keyspace_misses_total[5m]))\",\n          \"legendFormat\": \"\
+    Hit Ratio %\",\n          \"range\": true,\n          \"refId\": \"A\"\n     \
+    \   },\n        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"prometheus\"\n          },\n          \"editorMode\"\
+    : \"code\",\n          \"expr\": \"100 * rate(redis_keyspace_misses_total[5m])\
+    \ / (rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m]))\"\
+    ,\n          \"legendFormat\": \"Miss Ratio %\",\n          \"range\": true,\n\
+    \          \"refId\": \"B\"\n        }\n      ],\n      \"title\": \"Keyspace\
+    \ Hit / Miss Ratio\",\n      \"type\": \"timeseries\"\n    },\n    {\n      \"\
+    collapsed\": false,\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n\
+    \        \"x\": 0,\n        \"y\": 18\n      },\n      \"id\": 102,\n      \"\
+    title\": \"Clients & Rate Limiting\",\n      \"type\": \"row\"\n    },\n    {\n\
+    \      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\":\
+    \ \"prometheus\"\n      },\n      \"description\": \"Number of currently connected\
+    \ Redis clients\",\n      \"fieldConfig\": {\n        \"defaults\": {\n      \
+    \    \"color\": {\n            \"mode\": \"thresholds\"\n          },\n      \
+    \    \"mappings\": [],\n          \"thresholds\": {\n            \"mode\": \"\
+    absolute\",\n            \"steps\": [\n              {\n                \"color\"\
+    : \"green\",\n                \"value\": null\n              },\n            \
+    \  {\n                \"color\": \"yellow\",\n                \"value\": 50\n\
+    \              },\n              {\n                \"color\": \"red\",\n    \
+    \            \"value\": 100\n              }\n            ]\n          },\n  \
+    \        \"unit\": \"short\"\n        },\n        \"overrides\": []\n      },\n\
+    \      \"gridPos\": {\n        \"h\": 7,\n        \"w\": 8,\n        \"x\": 0,\n\
+    \        \"y\": 19\n      },\n      \"id\": 5,\n      \"options\": {\n       \
+    \ \"colorMode\": \"background\",\n        \"graphMode\": \"area\",\n        \"\
+    justifyMode\": \"center\",\n        \"orientation\": \"auto\",\n        \"reduceOptions\"\
+    : {\n          \"calcs\": [\n            \"lastNotNull\"\n          ],\n     \
+    \     \"fields\": \"\",\n          \"values\": false\n        },\n        \"textMode\"\
+    : \"auto\"\n      },\n      \"targets\": [\n        {\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\
+    \n          },\n          \"editorMode\": \"code\",\n          \"expr\": \"redis_connected_clients\"\
+    ,\n          \"instant\": true,\n          \"legendFormat\": \"Connected Clients\"\
+    ,\n          \"range\": false,\n          \"refId\": \"A\"\n        }\n      ],\n\
+    \      \"title\": \"Connected Clients\",\n      \"type\": \"stat\"\n    },\n \
+    \   {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"\
+    uid\": \"prometheus\"\n      },\n      \"description\": \"Count of rate_limit:*\
+    \ keys currently active in Redis (token-bucket entries)\",\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": {\n            \"mode\": \"\
+    thresholds\"\n          },\n          \"mappings\": [],\n          \"thresholds\"\
+    : {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              },\n              {\n                \"color\": \"yellow\",\n \
+    \               \"value\": 50\n              },\n              {\n           \
+    \     \"color\": \"red\",\n                \"value\": 100\n              }\n \
+    \           ]\n          },\n          \"unit\": \"short\"\n        },\n     \
+    \   \"overrides\": []\n      },\n      \"gridPos\": {\n        \"h\": 7,\n   \
+    \     \"w\": 8,\n        \"x\": 8,\n        \"y\": 19\n      },\n      \"id\"\
+    : 6,\n      \"options\": {\n        \"colorMode\": \"background\",\n        \"\
+    graphMode\": \"area\",\n        \"justifyMode\": \"center\",\n        \"orientation\"\
+    : \"auto\",\n        \"reduceOptions\": {\n          \"calcs\": [\n          \
+    \  \"lastNotNull\"\n          ],\n          \"fields\": \"\",\n          \"values\"\
+    : false\n        },\n        \"textMode\": \"auto\"\n      },\n      \"targets\"\
+    : [\n        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"prometheus\"\n          },\n          \"editorMode\"\
+    : \"code\",\n          \"expr\": \"redis_db_keys{db=\\\"db0\\\"} or vector(0)\"\
+    ,\n          \"instant\": true,\n          \"legendFormat\": \"Rate Limit Keys\
+    \ (approx)\",\n          \"range\": false,\n          \"refId\": \"A\"\n     \
+    \   }\n      ],\n      \"title\": \"Rate-Limit Key Count\",\n      \"type\": \"\
+    stat\"\n    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\"\
+    ,\n        \"uid\": \"prometheus\"\n      },\n      \"description\": \"Keys evicted\
+    \ due to maxmemory policy \\u2014 should stay near 0\",\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": {\n            \"mode\": \"\
+    palette-classic\"\n          },\n          \"custom\": {\n            \"axisLabel\"\
+    : \"evictions/s\",\n            \"drawStyle\": \"line\",\n            \"fillOpacity\"\
+    : 15,\n            \"gradientMode\": \"opacity\",\n            \"lineInterpolation\"\
+    : \"smooth\",\n            \"lineWidth\": 2,\n            \"showPoints\": \"auto\"\
+    ,\n            \"spanNulls\": false\n          },\n          \"mappings\": [],\n\
+    \          \"thresholds\": {\n            \"mode\": \"absolute\",\n          \
+    \  \"steps\": [\n              {\n                \"color\": \"green\",\n    \
+    \            \"value\": null\n              },\n              {\n            \
+    \    \"color\": \"red\",\n                \"value\": 1\n              }\n    \
+    \        ]\n          },\n          \"unit\": \"reqps\"\n        },\n        \"\
+    overrides\": [\n          {\n            \"matcher\": {\n              \"id\"\
+    : \"byName\",\n              \"options\": \"Evictions/s\"\n            },\n  \
+    \          \"properties\": [\n              {\n                \"id\": \"color\"\
+    ,\n                \"value\": {\n                  \"fixedColor\": \"red\",\n\
+    \                  \"mode\": \"fixed\"\n                }\n              }\n \
+    \           ]\n          }\n        ]\n      },\n      \"gridPos\": {\n      \
+    \  \"h\": 7,\n        \"w\": 8,\n        \"x\": 16,\n        \"y\": 19\n     \
+    \ },\n      \"id\": 7,\n      \"options\": {\n        \"legend\": {\n        \
+    \  \"calcs\": [\n            \"mean\",\n            \"max\"\n          ],\n  \
+    \        \"displayMode\": \"table\",\n          \"placement\": \"bottom\",\n \
+    \         \"showLegend\": true\n        },\n        \"tooltip\": {\n         \
+    \ \"mode\": \"multi\",\n          \"sort\": \"desc\"\n        }\n      },\n  \
+    \    \"targets\": [\n        {\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n       \
+    \   \"editorMode\": \"code\",\n          \"expr\": \"rate(redis_evicted_keys_total[5m])\"\
+    ,\n          \"legendFormat\": \"Evictions/s\",\n          \"range\": true,\n\
+    \          \"refId\": \"A\"\n        }\n      ],\n      \"title\": \"Evictions\"\
+    ,\n      \"type\": \"timeseries\"\n    }\n  ],\n  \"refresh\": \"10s\",\n  \"\
+    schemaVersion\": 38,\n  \"tags\": [\n    \"redis\",\n    \"cache\",\n    \"rate-limiting\"\
+    ,\n    \"infervoyage\"\n  ],\n  \"templating\": {\n    \"list\": [\n      {\n\
+    \        \"current\": {\n          \"selected\": false,\n          \"text\": \"\
+    5m\",\n          \"value\": \"5m\"\n        },\n        \"hide\": 0,\n       \
+    \ \"includeAll\": false,\n        \"label\": \"Rate Interval\",\n        \"multi\"\
+    : false,\n        \"name\": \"interval\",\n        \"options\": [\n          {\n\
+    \            \"selected\": false,\n            \"text\": \"1m\",\n           \
+    \ \"value\": \"1m\"\n          },\n          {\n            \"selected\": true,\n\
+    \            \"text\": \"5m\",\n            \"value\": \"5m\"\n          },\n\
+    \          {\n            \"selected\": false,\n            \"text\": \"10m\"\
+    ,\n            \"value\": \"10m\"\n          }\n        ],\n        \"query\"\
+    : \"1m,5m,10m\",\n        \"queryValue\": \"\",\n        \"skipUrlSync\": false,\n\
+    \        \"type\": \"custom\"\n      }\n    ]\n  },\n  \"time\": {\n    \"from\"\
+    : \"now-1h\",\n    \"to\": \"now\"\n  },\n  \"timepicker\": {},\n  \"timezone\"\
+    : \"browser\",\n  \"title\": \"Redis Metrics\",\n  \"uid\": \"redis-metrics\"\
+    ,\n  \"version\": 1,\n  \"weekStart\": \"\"\n}"
+  locust-live.json: "{\n  \"__inputs\": [\n    {\n      \"name\": \"DS_PROMETHEUS\"\
+    ,\n      \"label\": \"Prometheus\",\n      \"description\": \"\",\n      \"type\"\
+    : \"datasource\",\n      \"pluginId\": \"prometheus\",\n      \"pluginName\":\
+    \ \"Prometheus\"\n    }\n  ],\n  \"__requires\": [\n    {\n      \"type\": \"\
+    grafana\",\n      \"id\": \"grafana\",\n      \"name\": \"Grafana\",\n      \"\
+    version\": \"10.0.0\"\n    },\n    {\n      \"type\": \"datasource\",\n      \"\
+    id\": \"prometheus\",\n      \"name\": \"Prometheus\",\n      \"version\": \"\
+    1.0.0\"\n    },\n    {\n      \"type\": \"panel\",\n      \"id\": \"timeseries\"\
+    ,\n      \"name\": \"Time series\",\n      \"version\": \"\"\n    },\n    {\n\
+    \      \"type\": \"panel\",\n      \"id\": \"gauge\",\n      \"name\": \"Gauge\"\
+    ,\n      \"version\": \"\"\n    },\n    {\n      \"type\": \"panel\",\n      \"\
+    id\": \"stat\",\n      \"name\": \"Stat\",\n      \"version\": \"\"\n    },\n\
+    \    {\n      \"type\": \"panel\",\n      \"id\": \"table\",\n      \"name\":\
+    \ \"Table\",\n      \"version\": \"\"\n    }\n  ],\n  \"annotations\": {\n   \
+    \ \"list\": [\n      {\n        \"builtIn\": 1,\n        \"datasource\": {\n \
+    \         \"type\": \"grafana\",\n          \"uid\": \"-- Grafana --\"\n     \
+    \   },\n        \"enable\": true,\n        \"hide\": true,\n        \"iconColor\"\
+    : \"rgba(0, 211, 255, 1)\",\n        \"name\": \"Annotations & Alerts\",\n   \
+    \     \"type\": \"dashboard\"\n      }\n    ]\n  },\n  \"description\": \"Live\
+    \ Locust load test dashboard \\u2014 RPS, user count, failure rate, response time\
+    \ percentiles, and request volume\",\n  \"editable\": true,\n  \"fiscalYearStartMonth\"\
+    : 0,\n  \"graphTooltip\": 1,\n  \"id\": null,\n  \"links\": [],\n  \"panels\"\
+    : [\n    {\n      \"collapsed\": false,\n      \"gridPos\": {\n        \"h\":\
+    \ 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 0\n      },\n    \
+    \  \"id\": 100,\n      \"title\": \"Live Stats\",\n      \"type\": \"row\"\n \
+    \   },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n  \
+    \      \"uid\": \"prometheus\"\n      },\n      \"description\": \"Current number\
+    \ of active simulated Locust users\",\n      \"fieldConfig\": {\n        \"defaults\"\
+    : {\n          \"color\": {\n            \"mode\": \"thresholds\"\n          },\n\
+    \          \"mappings\": [],\n          \"thresholds\": {\n            \"mode\"\
+    : \"absolute\",\n            \"steps\": [\n              {\n                \"\
+    color\": \"blue\",\n                \"value\": null\n              },\n      \
+    \        {\n                \"color\": \"green\",\n                \"value\":\
+    \ 1\n              }\n            ]\n          },\n          \"unit\": \"short\"\
+    \n        },\n        \"overrides\": []\n      },\n      \"gridPos\": {\n    \
+    \    \"h\": 6,\n        \"w\": 6,\n        \"x\": 0,\n        \"y\": 1\n     \
+    \ },\n      \"id\": 1,\n      \"options\": {\n        \"colorMode\": \"background\"\
+    ,\n        \"graphMode\": \"area\",\n        \"justifyMode\": \"center\",\n  \
+    \      \"orientation\": \"auto\",\n        \"reduceOptions\": {\n          \"\
+    calcs\": [\n            \"lastNotNull\"\n          ],\n          \"fields\": \"\
+    \",\n          \"values\": false\n        },\n        \"textMode\": \"auto\"\n\
+    \      },\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n    \
+    \      },\n          \"editorMode\": \"code\",\n          \"expr\": \"locust_users\
+    \ or vector(0)\",\n          \"instant\": true,\n          \"legendFormat\": \"\
+    Users\",\n          \"range\": false,\n          \"refId\": \"A\"\n        }\n\
+    \      ],\n      \"title\": \"User Count\",\n      \"type\": \"stat\"\n    },\n\
+    \    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"\
+    uid\": \"prometheus\"\n      },\n      \"description\": \"Current requests per\
+    \ second from Locust\",\n      \"fieldConfig\": {\n        \"defaults\": {\n \
+    \         \"color\": {\n            \"mode\": \"thresholds\"\n          },\n \
+    \         \"mappings\": [],\n          \"thresholds\": {\n            \"mode\"\
+    : \"absolute\",\n            \"steps\": [\n              {\n                \"\
+    color\": \"green\",\n                \"value\": null\n              },\n     \
+    \         {\n                \"color\": \"blue\",\n                \"value\":\
+    \ 5\n              },\n              {\n                \"color\": \"purple\"\
+    ,\n                \"value\": 20\n              }\n            ]\n          },\n\
+    \          \"unit\": \"reqps\"\n        },\n        \"overrides\": []\n      },\n\
+    \      \"gridPos\": {\n        \"h\": 6,\n        \"w\": 6,\n        \"x\": 6,\n\
+    \        \"y\": 1\n      },\n      \"id\": 2,\n      \"options\": {\n        \"\
+    colorMode\": \"background\",\n        \"graphMode\": \"area\",\n        \"justifyMode\"\
+    : \"center\",\n        \"orientation\": \"auto\",\n        \"reduceOptions\":\
+    \ {\n          \"calcs\": [\n            \"lastNotNull\"\n          ],\n     \
+    \     \"fields\": \"\",\n          \"values\": false\n        },\n        \"textMode\"\
+    : \"auto\"\n      },\n      \"targets\": [\n        {\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\
+    \n          },\n          \"editorMode\": \"code\",\n          \"expr\": \"sum(rate(locust_requests_total[10s]))\
+    \ or sum(rate(http_requests_total[10s]))\",\n          \"instant\": true,\n  \
+    \        \"legendFormat\": \"RPS\",\n          \"range\": false,\n          \"\
+    refId\": \"A\"\n        }\n      ],\n      \"title\": \"Current RPS\",\n     \
+    \ \"type\": \"stat\"\n    },\n    {\n      \"datasource\": {\n        \"type\"\
+    : \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n      \"description\"\
+    : \"Percentage of Locust requests that have failed\",\n      \"fieldConfig\":\
+    \ {\n        \"defaults\": {\n          \"color\": {\n            \"mode\": \"\
+    thresholds\"\n          },\n          \"mappings\": [],\n          \"max\": 100,\n\
+    \          \"min\": 0,\n          \"thresholds\": {\n            \"mode\": \"\
+    absolute\",\n            \"steps\": [\n              {\n                \"color\"\
+    : \"green\",\n                \"value\": null\n              },\n            \
+    \  {\n                \"color\": \"yellow\",\n                \"value\": 1\n \
+    \             },\n              {\n                \"color\": \"red\",\n     \
+    \           \"value\": 5\n              }\n            ]\n          },\n     \
+    \     \"unit\": \"percent\"\n        },\n        \"overrides\": []\n      },\n\
+    \      \"gridPos\": {\n        \"h\": 6,\n        \"w\": 6,\n        \"x\": 12,\n\
+    \        \"y\": 1\n      },\n      \"id\": 3,\n      \"options\": {\n        \"\
+    colorMode\": \"background\",\n        \"graphMode\": \"area\",\n        \"justifyMode\"\
+    : \"center\",\n        \"orientation\": \"auto\",\n        \"reduceOptions\":\
+    \ {\n          \"calcs\": [\n            \"lastNotNull\"\n          ],\n     \
+    \     \"fields\": \"\",\n          \"values\": false\n        },\n        \"textMode\"\
+    : \"auto\"\n      },\n      \"targets\": [\n        {\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\
+    \n          },\n          \"editorMode\": \"code\",\n          \"expr\": \"100\
+    \ * sum(rate(locust_requests_fail_total[1m])) / (sum(rate(locust_requests_total[1m]))\
+    \ + 0.001)\",\n          \"instant\": true,\n          \"legendFormat\": \"Failure\
+    \ Rate %\",\n          \"range\": false,\n          \"refId\": \"A\"\n       \
+    \ }\n      ],\n      \"title\": \"Failure Rate %\",\n      \"type\": \"stat\"\n\
+    \    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n \
+    \       \"uid\": \"prometheus\"\n      },\n      \"description\": \"Current P95\
+    \ response time from Locust metrics\",\n      \"fieldConfig\": {\n        \"defaults\"\
+    : {\n          \"color\": {\n            \"mode\": \"thresholds\"\n          },\n\
+    \          \"mappings\": [],\n          \"thresholds\": {\n            \"mode\"\
+    : \"absolute\",\n            \"steps\": [\n              {\n                \"\
+    color\": \"green\",\n                \"value\": null\n              },\n     \
+    \         {\n                \"color\": \"yellow\",\n                \"value\"\
+    : 1000\n              },\n              {\n                \"color\": \"red\"\
+    ,\n                \"value\": 3000\n              }\n            ]\n         \
+    \ },\n          \"unit\": \"ms\"\n        },\n        \"overrides\": []\n    \
+    \  },\n      \"gridPos\": {\n        \"h\": 6,\n        \"w\": 6,\n        \"\
+    x\": 18,\n        \"y\": 1\n      },\n      \"id\": 4,\n      \"options\": {\n\
+    \        \"colorMode\": \"background\",\n        \"graphMode\": \"area\",\n  \
+    \      \"justifyMode\": \"center\",\n        \"orientation\": \"auto\",\n    \
+    \    \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\
+    \n          ],\n          \"fields\": \"\",\n          \"values\": false\n   \
+    \     },\n        \"textMode\": \"auto\"\n      },\n      \"targets\": [\n   \
+    \     {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n\
+    \            \"uid\": \"prometheus\"\n          },\n          \"editorMode\":\
+    \ \"code\",\n          \"expr\": \"histogram_quantile(0.95, sum(rate(locust_request_duration_seconds_bucket[1m]))\
+    \ by (le)) * 1000\",\n          \"instant\": true,\n          \"legendFormat\"\
+    : \"P95 ms\",\n          \"range\": false,\n          \"refId\": \"A\"\n     \
+    \   }\n      ],\n      \"title\": \"P95 Response Time\",\n      \"type\": \"stat\"\
+    \n    },\n    {\n      \"collapsed\": false,\n      \"gridPos\": {\n        \"\
+    h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 7\n      },\n \
+    \     \"id\": 101,\n      \"title\": \"Request Trends\",\n      \"type\": \"row\"\
+    \n    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n\
+    \        \"uid\": \"prometheus\"\n      },\n      \"description\": \"Request volume\
+    \ over time from Locust\",\n      \"fieldConfig\": {\n        \"defaults\": {\n\
+    \          \"color\": {\n            \"mode\": \"palette-classic\"\n         \
+    \ },\n          \"custom\": {\n            \"axisLabel\": \"req/s\",\n       \
+    \     \"drawStyle\": \"line\",\n            \"fillOpacity\": 12,\n           \
+    \ \"gradientMode\": \"opacity\",\n            \"lineInterpolation\": \"smooth\"\
+    ,\n            \"lineWidth\": 2,\n            \"showPoints\": \"never\",\n   \
+    \         \"spanNulls\": false\n          },\n          \"mappings\": [],\n  \
+    \        \"unit\": \"reqps\"\n        },\n        \"overrides\": [\n         \
+    \ {\n            \"matcher\": {\n              \"id\": \"byName\",\n         \
+    \     \"options\": \"Total RPS\"\n            },\n            \"properties\":\
+    \ [\n              {\n                \"id\": \"color\",\n                \"value\"\
+    : {\n                  \"fixedColor\": \"green\",\n                  \"mode\"\
+    : \"fixed\"\n                }\n              }\n            ]\n          },\n\
+    \          {\n            \"matcher\": {\n              \"id\": \"byName\",\n\
+    \              \"options\": \"Failure RPS\"\n            },\n            \"properties\"\
+    : [\n              {\n                \"id\": \"color\",\n                \"value\"\
+    : {\n                  \"fixedColor\": \"red\",\n                  \"mode\": \"\
+    fixed\"\n                }\n              }\n            ]\n          }\n    \
+    \    ]\n      },\n      \"gridPos\": {\n        \"h\": 9,\n        \"w\": 24,\n\
+    \        \"x\": 0,\n        \"y\": 8\n      },\n      \"id\": 5,\n      \"options\"\
+    : {\n        \"legend\": {\n          \"calcs\": [\n            \"mean\",\n  \
+    \          \"max\",\n            \"lastNotNull\"\n          ],\n          \"displayMode\"\
+    : \"table\",\n          \"placement\": \"bottom\",\n          \"showLegend\":\
+    \ true\n        },\n        \"tooltip\": {\n          \"mode\": \"multi\",\n \
+    \         \"sort\": \"desc\"\n        }\n      },\n      \"targets\": [\n    \
+    \    {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n \
+    \           \"uid\": \"prometheus\"\n          },\n          \"editorMode\": \"\
+    code\",\n          \"expr\": \"sum(rate(locust_requests_total[10s]))\",\n    \
+    \      \"legendFormat\": \"Total RPS\",\n          \"range\": true,\n        \
+    \  \"refId\": \"A\"\n        },\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n    \
+    \      },\n          \"editorMode\": \"code\",\n          \"expr\": \"sum(rate(locust_requests_fail_total[10s]))\"\
+    ,\n          \"legendFormat\": \"Failure RPS\",\n          \"range\": true,\n\
+    \          \"refId\": \"B\"\n        },\n        {\n          \"datasource\":\
+    \ {\n            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\
+    \n          },\n          \"editorMode\": \"code\",\n          \"expr\": \"locust_users\"\
+    ,\n          \"legendFormat\": \"Active Users\",\n          \"range\": true,\n\
+    \          \"refId\": \"C\"\n        }\n      ],\n      \"title\": \"Requests\
+    \ Over Time\",\n      \"type\": \"timeseries\"\n    },\n    {\n      \"collapsed\"\
+    : false,\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n      \
+    \  \"x\": 0,\n        \"y\": 17\n      },\n      \"id\": 102,\n      \"title\"\
+    : \"Response Time Distribution\",\n      \"type\": \"row\"\n    },\n    {\n  \
+    \    \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"\
+    prometheus\"\n      },\n      \"description\": \"P50 / P95 / P99 response time\
+    \ percentiles from Locust request duration histogram\",\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": {\n            \"mode\": \"\
+    palette-classic\"\n          },\n          \"custom\": {\n            \"axisLabel\"\
+    : \"latency (ms)\",\n            \"drawStyle\": \"line\",\n            \"fillOpacity\"\
+    : 10,\n            \"gradientMode\": \"opacity\",\n            \"lineInterpolation\"\
+    : \"smooth\",\n            \"lineWidth\": 2,\n            \"showPoints\": \"never\"\
+    ,\n            \"spanNulls\": false\n          },\n          \"mappings\": [],\n\
+    \          \"unit\": \"ms\"\n        },\n        \"overrides\": [\n          {\n\
+    \            \"matcher\": {\n              \"id\": \"byName\",\n             \
+    \ \"options\": \"P99\"\n            },\n            \"properties\": [\n      \
+    \        {\n                \"id\": \"color\",\n                \"value\": {\n\
+    \                  \"fixedColor\": \"red\",\n                  \"mode\": \"fixed\"\
+    \n                }\n              }\n            ]\n          },\n          {\n\
+    \            \"matcher\": {\n              \"id\": \"byName\",\n             \
+    \ \"options\": \"P95\"\n            },\n            \"properties\": [\n      \
+    \        {\n                \"id\": \"color\",\n                \"value\": {\n\
+    \                  \"fixedColor\": \"orange\",\n                  \"mode\": \"\
+    fixed\"\n                }\n              }\n            ]\n          },\n   \
+    \       {\n            \"matcher\": {\n              \"id\": \"byName\",\n   \
+    \           \"options\": \"P50\"\n            },\n            \"properties\":\
+    \ [\n              {\n                \"id\": \"color\",\n                \"value\"\
+    : {\n                  \"fixedColor\": \"green\",\n                  \"mode\"\
+    : \"fixed\"\n                }\n              }\n            ]\n          }\n\
+    \        ]\n      },\n      \"gridPos\": {\n        \"h\": 9,\n        \"w\":\
+    \ 24,\n        \"x\": 0,\n        \"y\": 18\n      },\n      \"id\": 6,\n    \
+    \  \"options\": {\n        \"legend\": {\n          \"calcs\": [\n           \
+    \ \"mean\",\n            \"max\",\n            \"lastNotNull\"\n          ],\n\
+    \          \"displayMode\": \"table\",\n          \"placement\": \"bottom\",\n\
+    \          \"showLegend\": true\n        },\n        \"tooltip\": {\n        \
+    \  \"mode\": \"multi\",\n          \"sort\": \"desc\"\n        }\n      },\n \
+    \     \"targets\": [\n        {\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n       \
+    \   \"editorMode\": \"code\",\n          \"expr\": \"histogram_quantile(0.50,\
+    \ sum(rate(locust_request_duration_seconds_bucket[1m])) by (le, name)) * 1000\"\
+    ,\n          \"legendFormat\": \"P50 - {{name}}\",\n          \"range\": true,\n\
+    \          \"refId\": \"A\"\n        },\n        {\n          \"datasource\":\
+    \ {\n            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\
+    \n          },\n          \"editorMode\": \"code\",\n          \"expr\": \"histogram_quantile(0.95,\
+    \ sum(rate(locust_request_duration_seconds_bucket[1m])) by (le, name)) * 1000\"\
+    ,\n          \"legendFormat\": \"P95 - {{name}}\",\n          \"range\": true,\n\
+    \          \"refId\": \"B\"\n        },\n        {\n          \"datasource\":\
+    \ {\n            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\
+    \n          },\n          \"editorMode\": \"code\",\n          \"expr\": \"histogram_quantile(0.99,\
+    \ sum(rate(locust_request_duration_seconds_bucket[1m])) by (le, name)) * 1000\"\
+    ,\n          \"legendFormat\": \"P99 - {{name}}\",\n          \"range\": true,\n\
+    \          \"refId\": \"C\"\n        }\n      ],\n      \"title\": \"Response\
+    \ Time Percentiles (P50 / P95 / P99)\",\n      \"type\": \"timeseries\"\n    },\n\
+    \    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"\
+    uid\": \"prometheus\"\n      },\n      \"description\": \"Request stats breakdown\
+    \ per Locust task/endpoint\",\n      \"fieldConfig\": {\n        \"defaults\"\
+    : {\n          \"color\": {\n            \"mode\": \"thresholds\"\n          },\n\
+    \          \"custom\": {\n            \"align\": \"auto\",\n            \"cellOptions\"\
+    : {\n              \"type\": \"auto\"\n            },\n            \"inspect\"\
+    : false\n          },\n          \"mappings\": [],\n          \"thresholds\":\
+    \ {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              },\n              {\n                \"color\": \"yellow\",\n \
+    \               \"value\": 1\n              },\n              {\n            \
+    \    \"color\": \"red\",\n                \"value\": 5\n              }\n    \
+    \        ]\n          },\n          \"unit\": \"short\"\n        },\n        \"\
+    overrides\": [\n          {\n            \"matcher\": {\n              \"id\"\
+    : \"byName\",\n              \"options\": \"Failure %\"\n            },\n    \
+    \        \"properties\": [\n              {\n                \"id\": \"unit\"\
+    ,\n                \"value\": \"percent\"\n              },\n              {\n\
+    \                \"id\": \"custom.cellOptions\",\n                \"value\": {\n\
+    \                  \"mode\": \"gradient\",\n                  \"type\": \"color-background\"\
+    \n                }\n              }\n            ]\n          }\n        ]\n\
+    \      },\n      \"gridPos\": {\n        \"h\": 7,\n        \"w\": 24,\n     \
+    \   \"x\": 0,\n        \"y\": 27\n      },\n      \"id\": 7,\n      \"options\"\
+    : {\n        \"cellHeight\": \"sm\",\n        \"footer\": {\n          \"countRows\"\
+    : false,\n          \"fields\": \"\",\n          \"reducer\": [\n            \"\
+    sum\"\n          ],\n          \"show\": false\n        },\n        \"showHeader\"\
+    : true,\n        \"sortBy\": [\n          {\n            \"desc\": true,\n   \
+    \         \"displayName\": \"Failure %\"\n          }\n        ]\n      },\n \
+    \     \"targets\": [\n        {\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n       \
+    \   \"editorMode\": \"code\",\n          \"expr\": \"sum by (name, method) (rate(locust_requests_total[5m]))\"\
+    ,\n          \"format\": \"table\",\n          \"instant\": true,\n          \"\
+    legendFormat\": \"__auto\",\n          \"range\": false,\n          \"refId\"\
+    : \"A\"\n        },\n        {\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n       \
+    \   \"editorMode\": \"code\",\n          \"expr\": \"100 * sum by (name, method)\
+    \ (rate(locust_requests_fail_total[5m])) / sum by (name, method) (rate(locust_requests_total[5m]))\"\
+    ,\n          \"format\": \"table\",\n          \"instant\": true,\n          \"\
+    legendFormat\": \"__auto\",\n          \"range\": false,\n          \"refId\"\
+    : \"B\"\n        }\n      ],\n      \"title\": \"Per-Endpoint Stats\",\n     \
+    \ \"transformations\": [\n        {\n          \"id\": \"merge\",\n          \"\
+    options\": {}\n        },\n        {\n          \"id\": \"organize\",\n      \
+    \    \"options\": {\n            \"renameByName\": {\n              \"name\":\
+    \ \"Task Name\",\n              \"method\": \"Method\",\n              \"Value\
+    \ #A\": \"RPS\",\n              \"Value #B\": \"Failure %\"\n            }\n \
+    \         }\n        }\n      ],\n      \"type\": \"table\"\n    }\n  ],\n  \"\
+    refresh\": \"5s\",\n  \"schemaVersion\": 38,\n  \"tags\": [\n    \"locust\",\n\
+    \    \"load-test\",\n    \"performance\",\n    \"infervoyage\"\n  ],\n  \"templating\"\
+    : {\n    \"list\": [\n      {\n        \"current\": {\n          \"selected\"\
+    : false,\n          \"text\": \"10s\",\n          \"value\": \"10s\"\n       \
+    \ },\n        \"hide\": 0,\n        \"includeAll\": false,\n        \"label\"\
+    : \"Scrape Window\",\n        \"multi\": false,\n        \"name\": \"scrape_window\"\
+    ,\n        \"options\": [\n          {\n            \"selected\": false,\n   \
+    \         \"text\": \"5s\",\n            \"value\": \"5s\"\n          },\n   \
+    \       {\n            \"selected\": true,\n            \"text\": \"10s\",\n \
+    \           \"value\": \"10s\"\n          },\n          {\n            \"selected\"\
+    : false,\n            \"text\": \"30s\",\n            \"value\": \"30s\"\n   \
+    \       },\n          {\n            \"selected\": false,\n            \"text\"\
+    : \"1m\",\n            \"value\": \"1m\"\n          }\n        ],\n        \"\
+    query\": \"5s,10s,30s,1m\",\n        \"queryValue\": \"\",\n        \"skipUrlSync\"\
+    : false,\n        \"type\": \"custom\"\n      }\n    ]\n  },\n  \"time\": {\n\
+    \    \"from\": \"now-30m\",\n    \"to\": \"now\"\n  },\n  \"timepicker\": {},\n\
+    \  \"timezone\": \"browser\",\n  \"title\": \"Load Test - Live Stats\",\n  \"\
+    uid\": \"locust-live\",\n  \"version\": 1,\n  \"weekStart\": \"\"\n}"
