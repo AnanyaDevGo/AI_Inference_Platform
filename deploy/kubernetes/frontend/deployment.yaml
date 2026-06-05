@@ -5,8 +5,11 @@ metadata:
   namespace: infervoyage-dev
   labels:
     app: frontend
+    app.kubernetes.io/name: infervoyage
+    app.kubernetes.io/instance: infervoyage-dev
+    component: frontend
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: frontend
@@ -14,21 +17,32 @@ spec:
     metadata:
       labels:
         app: frontend
+        app.kubernetes.io/name: infervoyage
+        app.kubernetes.io/instance: infervoyage-dev
+        component: frontend
     spec:
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 101  # Nginx standard unprivileged user
-        runAsGroup: 101
+        runAsNonRoot: false   # Caddy needs to bind port 8443
+      volumes:
+        - name: tls-certs
+          secret:
+            secretName: infervoyage-tls-cert
       containers:
         - name: frontend
           image: infervoyage-frontend:latest
           imagePullPolicy: IfNotPresent
           env:
             - name: API_HOST
-              value: "http://api:8000"
+              value: "http://infervoyage-dev-api:8000"
           ports:
             - name: http
               containerPort: 80
+            - name: https
+              containerPort: 8443
+          volumeMounts:
+            - name: tls-certs
+              mountPath: /etc/caddy/tls
+              readOnly: true
           resources:
             requests:
               cpu: 50m
@@ -38,13 +52,13 @@ spec:
               memory: 128Mi
           livenessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: 80
             initialDelaySeconds: 15
             periodSeconds: 15
           readinessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: 80
             initialDelaySeconds: 10
             periodSeconds: 10

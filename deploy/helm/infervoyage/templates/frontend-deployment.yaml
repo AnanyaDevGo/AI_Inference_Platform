@@ -18,9 +18,15 @@ spec:
         component: frontend
     spec:
       securityContext:
-        runAsNonRoot: true
+        runAsNonRoot: false
         runAsUser: 101
         runAsGroup: 101
+      {{- if .Values.ingress.tls.enabled }}
+      volumes:
+        - name: tls-certs
+          secret:
+            secretName: {{ .Values.ingress.tls.secretName | quote }}
+      {{- end }}
       containers:
         - name: frontend
           image: "{{ .Values.frontend.image }}"
@@ -31,17 +37,27 @@ spec:
           ports:
             - name: http
               containerPort: 80
+            - name: https
+              containerPort: 8443
+          {{- if .Values.ingress.tls.enabled }}
+          volumeMounts:
+            - name: tls-certs
+              mountPath: /etc/caddy/tls
+              readOnly: true
+          {{- end }}
           resources:
             {{- toYaml .Values.frontend.resources | nindent 12 }}
           livenessProbe:
             httpGet:
               path: /
-              port: 80
+              port: 8443
+              scheme: HTTPS
             initialDelaySeconds: 15
             periodSeconds: 15
           readinessProbe:
             httpGet:
               path: /
-              port: 80
+              port: 8443
+              scheme: HTTPS
             initialDelaySeconds: 10
             periodSeconds: 10

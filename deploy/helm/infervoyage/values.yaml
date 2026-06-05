@@ -36,11 +36,11 @@ redis:
   maxmemoryPolicy: "allkeys-lru"
   resources:
     requests:
-      cpu: 50m
-      memory: 64Mi
-    limits:
-      cpu: 200m
+      cpu: 100m
       memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
 
 # ── Ollama Config ─────────────────────────────────────────────────────────────
 ollama:
@@ -55,11 +55,11 @@ ollama:
       "nvidia.com/gpu": "1"
   resources:
     requests:
-      cpu: "200m"
-      memory: 512Mi
-    limits:
-      cpu: "1.0"
+      cpu: "500m"
       memory: 1Gi
+    limits:
+      cpu: "2.0"
+      memory: 3Gi
   autoscaling:
     enabled: false
     minReplicas: 1

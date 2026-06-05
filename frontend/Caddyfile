@@ -1,7 +1,15 @@
 :80 {
+    # Health probe endpoint — keeps liveness/readiness probes working inside k8s
+    respond /healthz 200
+}
+
+:8443 {
     log {
         output stdout
     }
+
+    # TLS with cert mounted from Kubernetes secret (infervoyage-tls-cert)
+    tls /etc/caddy/tls/tls.crt /etc/caddy/tls/tls.key
 
     # Serve static frontend files
     root * /srv
@@ -10,8 +18,9 @@
         @api_paths {
             path /api/* /admin/* /auth/* /v1/* /health* /docs* /openapi.json* /redoc*
         }
-        reverse_proxy @api_paths {$API_HOST:http://api:8000} {
+        reverse_proxy @api_paths {$API_HOST:http://infervoyage-dev-api:8000} {
             header_up X-Request-ID {uuid}
+            header_up X-Forwarded-Proto https
         }
 
         try_files {path} /index.html
