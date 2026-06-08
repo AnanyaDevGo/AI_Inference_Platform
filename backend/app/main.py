@@ -118,6 +118,35 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             except Exception as e:
                 logger.error("failed_to_drop_old_otps_table", error=str(e))
 
+    # Self-healing migration for conversations table (check model_name column)
+    conversations_ok = False
+    async with engine.connect() as conn:
+        try:
+            res = await conn.execute(text("SELECT model_name FROM conversations LIMIT 1"))
+            await res.all()
+            conversations_ok = True
+        except Exception:
+            pass
+
+    # Self-healing migration for chat_messages table (check user_id column)
+    chat_messages_ok = False
+    async with engine.connect() as conn:
+        try:
+            res = await conn.execute(text("SELECT user_id FROM chat_messages LIMIT 1"))
+            await res.all()
+            chat_messages_ok = True
+        except Exception:
+            pass
+
+    if not conversations_ok or not chat_messages_ok:
+        logger.info("conversations_or_chat_messages_table_outdated_dropping_to_recreate")
+        async with engine.begin() as conn:
+            try:
+                await conn.execute(text("DROP TABLE IF EXISTS chat_messages CASCADE"))
+                await conn.execute(text("DROP TABLE IF EXISTS conversations CASCADE"))
+            except Exception as e:
+                logger.error("failed_to_drop_old_conversation_tables", error=str(e))
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("database_tables_ready")

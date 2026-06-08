@@ -11,6 +11,7 @@ export interface Message {
 export interface Conversation {
   id: string
   title: string
+  model_name?: string | null
   messages: Message[]
   createdAt?: string
   updatedAt?: string
@@ -24,7 +25,8 @@ interface ChatState {
   setActiveId: (id: string | null) => void
   fetchConversations: (token: string) => Promise<void>
   fetchConversation: (token: string, convId: string) => Promise<void>
-  createConversation: (token: string) => Promise<string>
+  createConversation: (token: string, modelName?: string) => Promise<string>
+  renameConversation: (token: string, id: string, title: string) => Promise<void>
   deleteConversation: (token: string, id: string) => Promise<void>
   saveMessage: (token: string, convId: string, role: string, content: string) => Promise<string>
   updateMessage: (token: string, convId: string, msgId: string, content: string) => Promise<void>
@@ -39,6 +41,7 @@ interface ChatState {
 interface ConvListItem {
   id: string
   title: string
+  model_name?: string | null
   created_at: string
   updated_at: string
   message_count: number
@@ -47,6 +50,7 @@ interface ConvListItem {
 interface ConvDetail {
   id: string
   title: string
+  model_name?: string | null
   messages: { id: string; role: string; content: string; position: number }[]
 }
 
@@ -79,6 +83,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         conversations: data.map((c) => ({
           id: c.id,
           title: c.title,
+          model_name: c.model_name,
           messages: [],
           createdAt: c.created_at,
           updatedAt: c.updated_at,
@@ -100,6 +105,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             ? {
                 ...c,
                 title: data.title,
+                model_name: data.model_name,
                 messages: data.messages.map((m) => ({
                   id: m.id,
                   role: m.role as 'user' | 'assistant',
@@ -110,14 +116,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
             : c
         ),
       }))
-    } catch { /* silently fail */ }
+    } catch {
+      // If unauthorized (403) or missing (404), reset the active chat state
+      set({ activeId: null })
+      localStorage.removeItem('activeChatId')
+    }
   },
 
-  createConversation: async (token) => {
-    const data = await apiPost<ConvDetail>('/api/conversations', { title: 'New Chat' }, token)
+  createConversation: async (token, modelName) => {
+    const data = await apiPost<ConvDetail>('/api/conversations', { title: 'New Chat', model_name: modelName }, token)
     const conv: Conversation = {
       id: data.id,
       title: data.title,
+      model_name: data.model_name,
       messages: [],
     }
     set((s) => ({
@@ -126,6 +137,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }))
     localStorage.setItem('activeChatId', data.id)
     return data.id
+  },
+
+  renameConversation: async (token, id, title) => {
+    await apiPatch(`/api/conversations/${id}`, { title }, token)
+    set((s) => ({
+      conversations: s.conversations.map((c) =>
+        c.id === id ? { ...c, title } : c
+      ),
+    }))
   },
 
   deleteConversation: async (token, id) => {
@@ -148,6 +168,28 @@ export const useChatStore = create<ChatState>((set, get) => ({
       { role, content },
       token
     )
+    
+    // Sync the message details and the conversation title locally in state
+    set((s) => ({
+      conversations: s.conversations.map((c) => {
+        if (c.id !== convId) return c
+        
+        let updatedTitle = c.title
+        if (role === 'user' && c.messages.filter(m => m.role === 'user').length <= 1) {
+          const text = content.trim()
+          updatedTitle = text.length > 40 ? text.substring(0, 40) + '…' : text
+        }
+        
+        return {
+          ...c,
+          title: updatedTitle,
+          messages: c.messages.map((m) =>
+            m.role === role && !m.id ? { ...m, id: data.id, position: data.position } : m
+          ),
+        }
+      }),
+    }))
+
     return data.id
   },
 
@@ -159,7 +201,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     )
   },
 
-  // Local-only state updates for real-time streaming
   addLocalMessage: (convId, msg) => {
     set((s) => ({
       conversations: s.conversations.map((c) => {

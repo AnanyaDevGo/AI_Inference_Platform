@@ -3,8 +3,8 @@
 # Usage: PowerShell (Admin) > .\scripts\wsl-portforward.ps1
 
 $minikubeIp      = "192.168.49.2"
-$ingressHttpPort  = "31269"    # NodePort for HTTP  (update if Minikube is recreated)
-$ingressHttpsPort = "31395"    # NodePort for HTTPS (update if Minikube is recreated)
+$ingressHttpPort  = "30228"    # NodePort for HTTP  (update if Minikube is recreated)
+$ingressHttpsPort = "32464"    # NodePort for HTTPS (update if Minikube is recreated)
 
 Write-Host "Minikube IP       : $minikubeIp"       -ForegroundColor Cyan
 Write-Host "Ingress HTTP port : $ingressHttpPort"  -ForegroundColor Cyan

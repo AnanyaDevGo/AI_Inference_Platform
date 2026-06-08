@@ -1,9 +1,11 @@
 :80 {
+    bind 0.0.0.0
     # Health probe endpoint — keeps liveness/readiness probes working inside k8s
     respond /healthz 200
 }
 
 :8443 {
+    bind 0.0.0.0
     log {
         output stdout
     }

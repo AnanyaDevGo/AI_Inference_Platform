@@ -13,7 +13,7 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.dependencies.auth import CurrentUser, get_current_user
 from app.models.conversation import ChatMessage, Conversation
-from app.utils.errors import NotFoundError
+from app.utils.errors import NotFoundError, ForbiddenError
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/api/conversations", tags=["conversations"])
@@ -23,6 +23,7 @@ router = APIRouter(prefix="/api/conversations", tags=["conversations"])
 class ConversationOut(BaseModel):
     id: str
     title: str
+    model_name: str | None = None
     created_at: str
     updated_at: str
     message_count: int = 0
@@ -38,11 +39,13 @@ class MessageOut(BaseModel):
 class ConversationDetailOut(BaseModel):
     id: str
     title: str
+    model_name: str | None = None
     messages: list[MessageOut]
 
 
 class CreateConversationReq(BaseModel):
     title: str = "New Chat"
+    model_name: str | None = None
 
 
 class SaveMessageReq(BaseModel):
@@ -59,6 +62,8 @@ class UpdateTitleReq(BaseModel):
 
 @router.get("", response_model=list[ConversationOut])
 async def list_conversations(
+    limit: int = 50,
+    offset: int = 0,
     user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -67,6 +72,7 @@ async def list_conversations(
         select(
             Conversation.id,
             Conversation.title,
+            Conversation.model_name,
             Conversation.created_at,
             Conversation.updated_at,
             func.count(ChatMessage.id).label("message_count"),
@@ -75,6 +81,8 @@ async def list_conversations(
         .where(Conversation.user_id == uuid.UUID(user.user_id))
         .group_by(Conversation.id)
         .order_by(Conversation.updated_at.desc())
+        .limit(limit)
+        .offset(offset)
     )
     result = await db.execute(stmt)
     rows = result.all()
@@ -83,6 +91,7 @@ async def list_conversations(
         ConversationOut(
             id=str(r.id),
             title=r.title,
+            model_name=r.model_name,
             created_at=r.created_at.isoformat(),
             updated_at=r.updated_at.isoformat(),
             message_count=r.message_count,
@@ -101,6 +110,7 @@ async def create_conversation(
     conv = Conversation(
         user_id=uuid.UUID(user.user_id),
         title=req.title,
+        model_name=req.model_name,
     )
     db.add(conv)
     await db.flush()
@@ -109,6 +119,7 @@ async def create_conversation(
     return ConversationDetailOut(
         id=str(conv.id),
         title=conv.title,
+        model_name=conv.model_name,
         messages=[],
     )
 
@@ -123,19 +134,21 @@ async def get_conversation(
     stmt = (
         select(Conversation)
         .options(selectinload(Conversation.messages))
-        .where(
-            Conversation.id == uuid.UUID(conv_id),
-            Conversation.user_id == uuid.UUID(user.user_id),
-        )
+        .where(Conversation.id == uuid.UUID(conv_id))
     )
     result = await db.execute(stmt)
     conv = result.scalar_one_or_none()
     if not conv:
         raise NotFoundError("Conversation not found")
+        
+    # Enforce strict ownership check
+    if conv.user_id != uuid.UUID(user.user_id):
+        raise ForbiddenError("You do not have access to this conversation")
 
     return ConversationDetailOut(
         id=str(conv.id),
         title=conv.title,
+        model_name=conv.model_name,
         messages=[
             MessageOut(
                 id=str(m.id),
@@ -148,6 +161,46 @@ async def get_conversation(
     )
 
 
+@router.patch("/{conv_id}", response_model=ConversationOut)
+async def update_conversation(
+    conv_id: str,
+    req: UpdateTitleReq,
+    user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update conversation details (e.g., title)."""
+    stmt = select(Conversation).where(Conversation.id == uuid.UUID(conv_id))
+    result = await db.execute(stmt)
+    conv = result.scalar_one_or_none()
+    if not conv:
+        raise NotFoundError("Conversation not found")
+        
+    # Enforce strict ownership check
+    if conv.user_id != uuid.UUID(user.user_id):
+        raise ForbiddenError("You do not have access to this conversation")
+
+    conv.title = req.title
+    conv.updated_at = datetime.now(timezone.utc)
+    await db.flush()
+    await db.refresh(conv)
+
+    # Count messages
+    count_stmt = select(func.count(ChatMessage.id)).where(
+        ChatMessage.conversation_id == conv.id
+    )
+    count_result = await db.execute(count_stmt)
+    message_count = count_result.scalar() or 0
+
+    return ConversationOut(
+        id=str(conv.id),
+        title=conv.title,
+        model_name=conv.model_name,
+        created_at=conv.created_at.isoformat(),
+        updated_at=conv.updated_at.isoformat(),
+        message_count=message_count,
+    )
+
+
 @router.delete("/{conv_id}", status_code=204)
 async def delete_conversation(
     conv_id: str,
@@ -155,13 +208,17 @@ async def delete_conversation(
     db: AsyncSession = Depends(get_db),
 ):
     """Delete a conversation and all its messages."""
-    stmt = delete(Conversation).where(
-        Conversation.id == uuid.UUID(conv_id),
-        Conversation.user_id == uuid.UUID(user.user_id),
-    )
+    stmt = select(Conversation).where(Conversation.id == uuid.UUID(conv_id))
     result = await db.execute(stmt)
-    if result.rowcount == 0:
+    conv = result.scalar_one_or_none()
+    if not conv:
         raise NotFoundError("Conversation not found")
+        
+    # Enforce strict ownership check
+    if conv.user_id != uuid.UUID(user.user_id):
+        raise ForbiddenError("You do not have access to this conversation")
+
+    await db.delete(conv)
 
 
 @router.post("/{conv_id}/messages", response_model=MessageOut, status_code=201)
@@ -173,14 +230,15 @@ async def save_message(
 ):
     """Append a message to a conversation."""
     # Verify ownership
-    stmt = select(Conversation).where(
-        Conversation.id == uuid.UUID(conv_id),
-        Conversation.user_id == uuid.UUID(user.user_id),
-    )
+    stmt = select(Conversation).where(Conversation.id == uuid.UUID(conv_id))
     result = await db.execute(stmt)
     conv = result.scalar_one_or_none()
     if not conv:
         raise NotFoundError("Conversation not found")
+        
+    # Enforce strict ownership check
+    if conv.user_id != uuid.UUID(user.user_id):
+        raise ForbiddenError("You do not have access to this conversation")
 
     # Get next position
     count_stmt = select(func.count(ChatMessage.id)).where(
@@ -191,6 +249,7 @@ async def save_message(
 
     msg = ChatMessage(
         conversation_id=uuid.UUID(conv_id),
+        user_id=uuid.UUID(user.user_id),
         role=req.role,
         content=req.content,
         position=position,
@@ -226,14 +285,15 @@ async def update_message(
 ):
     """Update a message's content (used for streaming completion updates)."""
     # Verify ownership
-    stmt = select(Conversation).where(
-        Conversation.id == uuid.UUID(conv_id),
-        Conversation.user_id == uuid.UUID(user.user_id),
-    )
+    stmt = select(Conversation).where(Conversation.id == uuid.UUID(conv_id))
     result = await db.execute(stmt)
     conv = result.scalar_one_or_none()
     if not conv:
         raise NotFoundError("Conversation not found")
+        
+    # Enforce strict ownership check
+    if conv.user_id != uuid.UUID(user.user_id):
+        raise ForbiddenError("You do not have access to this conversation")
 
     msg_stmt = select(ChatMessage).where(
         ChatMessage.id == uuid.UUID(msg_id),
@@ -267,14 +327,15 @@ async def delete_messages_from(
 ):
     """Delete a message and all subsequent messages in the conversation."""
     # Verify ownership
-    stmt = select(Conversation).where(
-        Conversation.id == uuid.UUID(conv_id),
-        Conversation.user_id == uuid.UUID(user.user_id),
-    )
+    stmt = select(Conversation).where(Conversation.id == uuid.UUID(conv_id))
     result = await db.execute(stmt)
     conv = result.scalar_one_or_none()
     if not conv:
         raise NotFoundError("Conversation not found")
+        
+    # Enforce strict ownership check
+    if conv.user_id != uuid.UUID(user.user_id):
+        raise ForbiddenError("You do not have access to this conversation")
 
     msg_stmt = select(ChatMessage).where(
         ChatMessage.id == uuid.UUID(msg_id),
@@ -295,4 +356,3 @@ async def delete_messages_from(
     # Touch updated_at
     conv.updated_at = datetime.now(timezone.utc)
     await db.flush()
-

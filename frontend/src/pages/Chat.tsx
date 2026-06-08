@@ -221,7 +221,7 @@ export default function ChatPage() {
 
   const handleNewChat = async () => {
     if (token) {
-      await createConversation(token)
+      await createConversation(token, selectedModel)
     }
   }
 
@@ -292,7 +292,7 @@ export default function ChatPage() {
 
     let convId = activeId
     if (!convId) {
-      convId = await createConversation(token)
+      convId = await createConversation(token, selectedModel)
     }
 
     setInput('')
@@ -631,30 +631,20 @@ export default function ChatPage() {
                         : ''
                     }`}
                   >
-                    <MessageText content={msg.content} />
+                    {msg.role === 'assistant' && msg.content === '' && streaming && i === messages.length - 1 ? (
+                      <div className="typing-indicator" style={{ display: 'flex', gap: '6px', alignItems: 'center', height: '20px', padding: '8px 0' }}>
+                        <span style={{ width: '8px', height: '8px', background: 'var(--accent)', borderRadius: '50%', display: 'inline-block', animation: 'typing-pulse 1.4s infinite ease-in-out both' }}></span>
+                        <span style={{ width: '8px', height: '8px', background: 'var(--accent)', borderRadius: '50%', display: 'inline-block', animation: 'typing-pulse 1.4s infinite ease-in-out both 0.2s' }}></span>
+                        <span style={{ width: '8px', height: '8px', background: 'var(--accent)', borderRadius: '50%', display: 'inline-block', animation: 'typing-pulse 1.4s infinite ease-in-out both 0.4s' }}></span>
+                      </div>
+                    ) : (
+                      <MessageText content={msg.content} />
+                    )}
                   </div>
                 )}
               </div>
             </div>
           ))}
-          
-          {streaming && (messages.length === 0 || messages[messages.length - 1].role === 'user' || !messages[messages.length - 1].content) && (
-            <div className="message assistant typing" style={{ background: 'rgba(255,255,255,0.015)' }}>
-              <div className="message-avatar" style={{ background: 'linear-gradient(135deg, #10b981, #34d399)', color: 'white' }}>✦</div>
-              <div className="message-content">
-                <div className="message-role">
-                  <span>{formatModelDisplayName(selectedModel)}</span>
-                </div>
-                <div className="message-text" style={{ padding: '8px 0' }}>
-                  <div className="typing-indicator" style={{ display: 'flex', gap: '6px', alignItems: 'center', height: '20px' }}>
-                    <span style={{ width: '8px', height: '8px', background: 'var(--accent)', borderRadius: '50%', display: 'inline-block', animation: 'typing-pulse 1.4s infinite ease-in-out both' }}></span>
-                    <span style={{ width: '8px', height: '8px', background: 'var(--accent)', borderRadius: '50%', display: 'inline-block', animation: 'typing-pulse 1.4s infinite ease-in-out both 0.2s' }}></span>
-                    <span style={{ width: '8px', height: '8px', background: 'var(--accent)', borderRadius: '50%', display: 'inline-block', animation: 'typing-pulse 1.4s infinite ease-in-out both 0.4s' }}></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           <div ref={messagesEndRef} />
         </div>

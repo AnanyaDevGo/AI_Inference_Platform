@@ -21,19 +21,19 @@ echo "---"
 kubectl get pods -n monitoring --no-headers | grep -E "grafana|prometheus" | awk '{printf "%-55s %s\n", $1, $4}'
 
 echo ""
-echo "=== Starting port-forwards in background ==="
+echo "=== Starting port-forwards in background (with auto-restart loops) ==="
 
-kubectl port-forward -n infervoyage-dev service/frontend 8443:8443 --address 0.0.0.0 \
-  > /tmp/pf_app.log 2>&1 &
-echo "App (HTTPS)  port-forward PID $! → 8443"
+nohup bash -c "while true; do kubectl port-forward -n infervoyage-dev service/frontend 8443:8443 --address 0.0.0.0; sleep 1; done" > /tmp/pf_app.log 2>&1 &
+echo "App (HTTPS)  port-forward Loop PID $! → 8443"
+disown $!
 
-kubectl port-forward -n monitoring service/prometheus-grafana 3001:80 --address 0.0.0.0 \
-  > /tmp/pf_grafana.log 2>&1 &
-echo "Grafana      port-forward PID $! → 3001"
+nohup bash -c "while true; do kubectl port-forward -n monitoring service/prometheus-grafana 3001:80 --address 0.0.0.0; sleep 1; done" > /tmp/pf_grafana.log 2>&1 &
+echo "Grafana      port-forward Loop PID $! → 3001"
+disown $!
 
-kubectl port-forward -n infervoyage-dev service/infervoyage-dev-locust-master 8089:8089 --address 0.0.0.0 \
-  > /tmp/pf_locust.log 2>&1 &
-echo "Locust       port-forward PID $! → 8089"
+nohup bash -c "while true; do kubectl port-forward -n infervoyage-dev service/infervoyage-dev-locust-master 8089:8089 --address 0.0.0.0; sleep 1; done" > /tmp/pf_locust.log 2>&1 &
+echo "Locust       port-forward Loop PID $! → 8089"
+disown $!
 
 echo "Waiting 4s for port-forwards to bind..."
 sleep 4
