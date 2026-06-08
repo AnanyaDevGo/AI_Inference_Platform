@@ -142,6 +142,7 @@ export default function ChatPage() {
 
   const token = useAuthStore((s) => s.token)
   const userName = useAuthStore((s) => s.userName)
+  const userEmail = useAuthStore((s) => s.userEmail)
   const role = useAuthStore((s) => s.role)
   const isAdmin = useAuthStore((s) => s.isAdmin)()
   const logout = useAuthStore((s) => s.logout)
@@ -181,14 +182,15 @@ export default function ChatPage() {
   useEffect(() => {
     if (token) {
       fetchConversations(token).then(() => {
-        const savedId = localStorage.getItem('activeChatId')
+        const key = userEmail ? `activeChatId_${userEmail}` : 'activeChatId'
+        const savedId = localStorage.getItem(key)
         if (savedId) {
           useChatStore.getState().setActiveId(savedId)
           useChatStore.getState().fetchConversation(token, savedId)
         }
       })
     }
-  }, [token, fetchConversations])
+  }, [token, fetchConversations, userEmail])
 
   // Smart auto-scroll
   const scrollToBottom = useCallback(() => {

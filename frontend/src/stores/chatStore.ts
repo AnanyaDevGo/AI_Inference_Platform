@@ -1,5 +1,11 @@
 import { create } from 'zustand'
 import { apiGet, apiPost, apiDelete, apiPatch } from '../api/client'
+import { useAuthStore } from './authStore'
+
+const getActiveChatKey = () => {
+  const email = useAuthStore.getState().userEmail
+  return email ? `activeChatId_${email}` : 'activeChatId'
+}
 
 export interface Message {
   id?: string
@@ -69,9 +75,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setActiveId: (id) => {
     set({ activeId: id })
     if (id) {
-      localStorage.setItem('activeChatId', id)
+      localStorage.setItem(getActiveChatKey(), id)
     } else {
-      localStorage.removeItem('activeChatId')
+      localStorage.removeItem(getActiveChatKey())
     }
   },
 
@@ -119,7 +125,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } catch {
       // If unauthorized (403) or missing (404), reset the active chat state
       set({ activeId: null })
-      localStorage.removeItem('activeChatId')
+      localStorage.removeItem(getActiveChatKey())
     }
   },
 
@@ -135,7 +141,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       conversations: [conv, ...s.conversations],
       activeId: data.id,
     }))
-    localStorage.setItem('activeChatId', data.id)
+    localStorage.setItem(getActiveChatKey(), data.id)
     return data.id
   },
 
@@ -154,9 +160,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const filtered = s.conversations.filter((c) => c.id !== id)
       const newActive = s.activeId === id ? (filtered[0]?.id ?? null) : s.activeId
       if (newActive) {
-        localStorage.setItem('activeChatId', newActive)
+        localStorage.setItem(getActiveChatKey(), newActive)
       } else {
-        localStorage.removeItem('activeChatId')
+        localStorage.removeItem(getActiveChatKey())
       }
       return { conversations: filtered, activeId: newActive }
     })

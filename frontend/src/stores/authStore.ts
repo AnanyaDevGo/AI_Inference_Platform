@@ -59,7 +59,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     localStorage.removeItem('token')
     localStorage.removeItem('userName')
     localStorage.removeItem('userEmail')
-    localStorage.removeItem('activeChatId')
     set({ token: null, userName: null, userEmail: null, orgId: null, role: null })
   },
   
