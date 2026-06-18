@@ -130,81 +130,106 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   createConversation: async (token, modelName) => {
-    const data = await apiPost<ConvDetail>('/api/conversations', { title: 'New Chat', model_name: modelName }, token)
-    const conv: Conversation = {
-      id: data.id,
-      title: data.title,
-      model_name: data.model_name,
-      messages: [],
+    try {
+      const data = await apiPost<ConvDetail>('/api/conversations', { title: 'New Chat', model_name: modelName }, token)
+      const conv: Conversation = {
+        id: data.id,
+        title: data.title,
+        model_name: data.model_name,
+        messages: [],
+      }
+      set((s) => ({
+        conversations: [conv, ...s.conversations],
+        activeId: data.id,
+      }))
+      localStorage.setItem(getActiveChatKey(), data.id)
+      return data.id
+    } catch (err) {
+      console.error('Failed to create conversation:', err)
+      throw err
     }
-    set((s) => ({
-      conversations: [conv, ...s.conversations],
-      activeId: data.id,
-    }))
-    localStorage.setItem(getActiveChatKey(), data.id)
-    return data.id
   },
 
   renameConversation: async (token, id, title) => {
-    await apiPatch(`/api/conversations/${id}`, { title }, token)
-    set((s) => ({
-      conversations: s.conversations.map((c) =>
-        c.id === id ? { ...c, title } : c
-      ),
-    }))
+    try {
+      await apiPatch(`/api/conversations/${id}`, { title }, token)
+      set((s) => ({
+        conversations: s.conversations.map((c) =>
+          c.id === id ? { ...c, title } : c
+        ),
+      }))
+    } catch (err) {
+      console.error('Failed to rename conversation:', err)
+      throw err
+    }
   },
 
   deleteConversation: async (token, id) => {
-    await apiDelete(`/api/conversations/${id}`, token)
-    set((s) => {
-      const filtered = s.conversations.filter((c) => c.id !== id)
-      const newActive = s.activeId === id ? (filtered[0]?.id ?? null) : s.activeId
-      if (newActive) {
-        localStorage.setItem(getActiveChatKey(), newActive)
-      } else {
-        localStorage.removeItem(getActiveChatKey())
-      }
-      return { conversations: filtered, activeId: newActive }
-    })
+    try {
+      await apiDelete(`/api/conversations/${id}`, token)
+      set((s) => {
+        const filtered = s.conversations.filter((c) => c.id !== id)
+        const newActive = s.activeId === id ? (filtered[0]?.id ?? null) : s.activeId
+        if (newActive) {
+          localStorage.setItem(getActiveChatKey(), newActive)
+        } else {
+          localStorage.removeItem(getActiveChatKey())
+        }
+        return { conversations: filtered, activeId: newActive }
+      })
+    } catch (err) {
+      console.error('Failed to delete conversation:', err)
+      throw err
+    }
   },
 
   saveMessage: async (token, convId, role, content) => {
-    const data = await apiPost<MsgResponse>(
-      `/api/conversations/${convId}/messages`,
-      { role, content },
-      token
-    )
-    
-    // Sync the message details and the conversation title locally in state
-    set((s) => ({
-      conversations: s.conversations.map((c) => {
-        if (c.id !== convId) return c
-        
-        let updatedTitle = c.title
-        if (role === 'user' && c.messages.filter(m => m.role === 'user').length <= 1) {
-          const text = content.trim()
-          updatedTitle = text.length > 40 ? text.substring(0, 40) + '…' : text
-        }
-        
-        return {
-          ...c,
-          title: updatedTitle,
-          messages: c.messages.map((m) =>
-            m.role === role && !m.id ? { ...m, id: data.id, position: data.position } : m
-          ),
-        }
-      }),
-    }))
+    try {
+      const data = await apiPost<MsgResponse>(
+        `/api/conversations/${convId}/messages`,
+        { role, content },
+        token
+      )
+      
+      // Sync the message details and the conversation title locally in state
+      set((s) => ({
+        conversations: s.conversations.map((c) => {
+          if (c.id !== convId) return c
+          
+          let updatedTitle = c.title
+          if (role === 'user' && c.messages.filter(m => m.role === 'user').length <= 1) {
+            const text = content.trim()
+            updatedTitle = text.length > 40 ? text.substring(0, 40) + '…' : text
+          }
+          
+          return {
+            ...c,
+            title: updatedTitle,
+            messages: c.messages.map((m) =>
+              m.role === role && !m.id ? { ...m, id: data.id, position: data.position } : m
+            ),
+          }
+        }),
+      }))
 
-    return data.id
+      return data.id
+    } catch (err) {
+      console.error('Failed to save message:', err)
+      throw err
+    }
   },
 
   updateMessage: async (token, convId, msgId, content) => {
-    await apiPatch<MsgResponse>(
-      `/api/conversations/${convId}/messages/${msgId}`,
-      { role: 'assistant', content },
-      token
-    )
+    try {
+      await apiPatch<MsgResponse>(
+        `/api/conversations/${convId}/messages/${msgId}`,
+        { role: 'assistant', content },
+        token
+      )
+    } catch (err) {
+      console.error('Failed to update message:', err)
+      throw err
+    }
   },
 
   addLocalMessage: (convId, msg) => {
