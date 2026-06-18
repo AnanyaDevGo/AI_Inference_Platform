@@ -431,6 +431,14 @@ function KeysTab({ token }: { token: string | null }) {
     } catch { /* */ }
   }
 
+  const removeKey = async (id: string) => {
+    if (!window.confirm("Remove this key?")) return
+    try {
+      await apiDelete(`/admin/api-keys/${id}`, token)
+      load()
+    } catch { /* */ }
+  }
+
   const rotate = async (id: string) => {
     if (!window.confirm("Rotate this key? The old key will immediately stop working.")) return
     setCreatedKey(null)
@@ -476,12 +484,16 @@ function KeysTab({ token }: { token: string | null }) {
               <td><span className={`status-dot ${k.is_active ? 'active' : 'inactive'}`} /></td>
               <td>{new Date(k.created_at).toLocaleDateString()}</td>
               <td>
-                {k.is_active && (
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="btn-sm" onClick={() => rotate(k.id)}>Rotate</button>
-                    <button className="btn-sm btn-danger" onClick={() => revoke(k.id)}>Revoke</button>
-                  </div>
-                )}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {k.is_active ? (
+                    <>
+                      <button className="btn-sm" onClick={() => rotate(k.id)}>Rotate</button>
+                      <button className="btn-sm btn-danger" onClick={() => revoke(k.id)}>Revoke</button>
+                    </>
+                  ) : (
+                    <button className="btn-sm btn-danger" onClick={() => removeKey(k.id)}>Remove</button>
+                  )}
+                </div>
               </td>
             </tr>
           ))}

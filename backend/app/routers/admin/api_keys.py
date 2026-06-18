@@ -125,7 +125,7 @@ async def revoke_api_key(
     user: CurrentUser = Depends(require_role("platform_admin", "org_admin", "operator")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Revoke an API key. Irreversible."""
+    """Revoke an API key if active. Delete it from the database if already revoked."""
     stmt = select(ApiKey).where(ApiKey.id == uuid.UUID(key_id))
     if user.role != "platform_admin":
         stmt = stmt.where(ApiKey.org_id == uuid.UUID(user.org_id))
@@ -137,5 +137,15 @@ async def revoke_api_key(
     if not key:
         raise NotFoundError("API key not found")
 
-    key.is_active = False
+    if key.is_active:
+        key.is_active = False
+    else:
+        from app.models.usage_log import UsageLog
+        from sqlalchemy import update
+        await db.execute(
+            update(UsageLog)
+            .where(UsageLog.api_key_id == key.id)
+            .values(api_key_id=None)
+        )
+        await db.delete(key)
     await db.flush()

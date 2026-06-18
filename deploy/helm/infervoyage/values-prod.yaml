@@ -78,3 +78,16 @@ redis:
 # Disable Locust by default in production cluster for security/safety
 locust:
   enabled: false
+
+# ── Network Policies (Production) ────────────────────────────────────────────
+networkPolicies:
+  enabled: true
+  ingressControllerNamespace: "ingress-nginx"
+  monitoringNamespace: "monitoring"
+  dnsNamespace: "kube-system"
+  externalEgress:
+    cidr: "0.0.0.0/0"
+    exceptCIDRs:
+      - "10.0.0.0/8"
+      - "172.16.0.0/12"
+      - "192.168.0.0/16"

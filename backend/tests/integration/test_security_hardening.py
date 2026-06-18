@@ -170,3 +170,66 @@ async def test_rate_limiting_headers(client: httpx.AsyncClient, monkeypatch: pyt
         assert resp.headers.get("X-RateLimit-Remaining") == "0"
     finally:
         app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_api_key_revoke_and_delete_flow(client: httpx.AsyncClient) -> None:
+    """
+    Verify the delete endpoint behavior:
+    - Calling DELETE on an active API key sets is_active = False (revokes it).
+    - Calling DELETE on an already inactive key removes it from the database.
+    """
+    factory = get_session_factory()
+    async with factory() as db:
+        from app.models.org import Org
+        from app.models.user import User
+        org = (await db.execute(select(Org))).scalars().first()
+        user = (await db.execute(select(User))).scalars().first()
+        org_id = org.id
+        user_id = user.id
+
+    async def mock_admin_auth():
+        return CurrentUser(
+            user_id=str(user_id),
+            email="test-admin@example.com",
+            name="test-admin",
+            org_id=str(org_id),
+            role="platform_admin"
+        )
+    app.dependency_overrides[get_current_user_or_api_key] = mock_admin_auth
+    app.dependency_overrides[get_current_user] = mock_admin_auth
+
+    try:
+        # 1. Create an API key
+        create_resp = await client.post("/admin/api-keys", json={"name": "Delete Test Key"})
+        assert create_resp.status_code == 201
+        key_data = create_resp.json()
+        key_id = key_data["id"]
+
+        # Verify it exists and is active
+        async with factory() as db:
+            db_key = await db.get(ApiKey, uuid.UUID(key_id))
+            assert db_key is not None
+            assert db_key.is_active is True
+
+        # 2. Call delete (revoke) first time
+        delete_resp = await client.delete(f"/admin/api-keys/{key_id}")
+        assert delete_resp.status_code == 204
+
+        # Verify it is now inactive (revoked)
+        async with factory() as db:
+            db_key = await db.get(ApiKey, uuid.UUID(key_id))
+            assert db_key is not None
+            assert db_key.is_active is False
+
+        # 3. Call delete again (to hard delete)
+        delete_resp2 = await client.delete(f"/admin/api-keys/{key_id}")
+        assert delete_resp2.status_code == 204
+
+        # Verify it is removed from the database entirely
+        async with factory() as db:
+            db_key = await db.get(ApiKey, uuid.UUID(key_id))
+            assert db_key is None
+
+    finally:
+        app.dependency_overrides.clear()

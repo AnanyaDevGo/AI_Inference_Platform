@@ -1,0 +1,38 @@
+{{- if .Values.networkPolicies.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "infervoyage.fullname" . }}-postgres
+  labels:
+    {{- include "infervoyage.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "infervoyage.selectorLabels" . | nindent 6 }}
+      component: postgres
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow Postgres database traffic from the API Backend
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "infervoyage.selectorLabels" . | nindent 14 }}
+              component: api
+      ports:
+        - protocol: TCP
+          port: 5432
+    # Allow Prometheus to scrape metrics from postgres-exporter sidecar
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.networkPolicies.monitoringNamespace }}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - protocol: TCP
+          port: 9187
+  egress: []
+{{- end }}

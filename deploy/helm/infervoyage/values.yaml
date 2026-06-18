@@ -152,3 +152,16 @@ observability:
   prometheusOperator:
     enabled: true
     releaseLabel: "prometheus"
+
+# ── Network Policies Config ───────────────────────────────────────────────────
+networkPolicies:
+  enabled: true
+  ingressControllerNamespace: "ingress-nginx"
+  monitoringNamespace: "monitoring"
+  dnsNamespace: "kube-system"
+  externalEgress:
+    cidr: "0.0.0.0/0"
+    exceptCIDRs:
+      - "10.0.0.0/8"
+      - "172.16.0.0/12"
+      - "192.168.0.0/16"

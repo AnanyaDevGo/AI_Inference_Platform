@@ -38,7 +38,7 @@ def get_otp_from_logs(email):
         pass
 
     # Fallback to kubectl logs (for Console provider verification in K8s)
-    cmd = "kubectl logs -n infervoyage-dev -l component=api --tail=150"
+    cmd = "kubectl logs -n infervoyage-dev -l component=api --tail=1000"
     logs = run_cmd(cmd)
     import re
     blocks = logs.split("========================================================================")

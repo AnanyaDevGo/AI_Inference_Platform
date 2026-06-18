@@ -1,0 +1,53 @@
+{{- if .Values.networkPolicies.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "infervoyage.fullname" . }}-ollama
+  labels:
+    {{- include "infervoyage.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "infervoyage.selectorLabels" . | nindent 6 }}
+      component: ollama
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow Ollama inference requests from the API Backend
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "infervoyage.selectorLabels" . | nindent 14 }}
+              component: api
+      ports:
+        - protocol: TCP
+          port: 11434
+  egress:
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.networkPolicies.dnsNamespace }}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Allow connection to public internet to download models
+    - to:
+        - ipBlock:
+            cidr: {{ .Values.networkPolicies.externalEgress.cidr | quote }}
+            {{- if .Values.networkPolicies.externalEgress.exceptCIDRs }}
+            except:
+              {{- toYaml .Values.networkPolicies.externalEgress.exceptCIDRs | nindent 14 }}
+            {{- end }}
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+{{- end }}
